@@ -1,0 +1,90 @@
+name: Build & Smoke Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "codex-terminal/**"
+      - ".github/workflows/build-test.yml"
+  push:
+    branches: [main]
+    paths:
+      - "codex-terminal/**"
+      - ".github/workflows/build-test.yml"
+
+jobs:
+  lint:
+    name: Lint Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: codex-terminal/Dockerfile
+          failure-threshold: error
+          ignore: DL3006,DL3018
+
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            build_from: ghcr.io/home-assistant/amd64-base:3.21
+          - arch: aarch64
+            platform: linux/arm64
+            build_from: ghcr.io/home-assistant/aarch64-base:3.21
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        if: matrix.arch != 'amd64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container
+        uses: docker/build-push-action@v6
+        with:
+          context: ./codex-terminal
+          push: false
+          load: ${{ matrix.arch == 'amd64' }}
+          platforms: ${{ matrix.platform }}
+          tags: test/codex-terminal:${{ matrix.arch }}
+          build-args: |
+            BUILD_FROM=${{ matrix.build_from }}
+
+      - name: Smoke test - image runs
+        if: matrix.arch == 'amd64'
+        run: |
+          docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c "echo 'Image runs OK'"
+
+      - name: Smoke test - scripts executable
+        if: matrix.arch == 'amd64'
+        run: |
+          docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c '
+            for script in /run.sh /opt/scripts/codex-session-picker.sh /opt/scripts/setup-ha-mcp.sh /opt/scripts/health-check.sh /opt/scripts/welcome.sh; do
+              if [ ! -x "$script" ]; then
+                echo "FAIL: $script is not executable"
+                exit 1
+              fi
+              echo "OK: $script"
+            done
+          '
+
+      - name: Smoke test - key binaries available
+        if: matrix.arch == 'amd64'
+        run: |
+          docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c '
+            for bin in codex node npm ttyd tmux git rg jq curl uvx; do
+              if ! command -v "$bin" >/dev/null 2>&1; then
+                echo "FAIL: $bin not found"
+                exit 1
+              fi
+              echo "OK: $bin"
+            done
+          '
