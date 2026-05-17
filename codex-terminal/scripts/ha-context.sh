@@ -145,7 +145,7 @@ write_skill() {
     cat > "$SKILL_DIR/SKILL.md" <<'SKILL'
 ---
 name: home-assistant
-description: Use when working on this Home Assistant machine: configuration YAML, automations, scripts, dashboards, add-ons, Supervisor/Core APIs, logs, entities, and troubleshooting.
+description: "Use when working on this Home Assistant machine: configuration YAML, automations, scripts, dashboards, add-ons, Supervisor/Core APIs, logs, entities, and troubleshooting."
 ---
 
 # Home Assistant

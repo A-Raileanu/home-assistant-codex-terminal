@@ -5,6 +5,7 @@ ARG CODEX_VERSION=0.130.0
 
 RUN apk add --no-cache \
     bash \
+    bubblewrap \
     curl \
     git \
     jq \
