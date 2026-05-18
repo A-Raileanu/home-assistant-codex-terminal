@@ -1,28 +1,367 @@
 # Codex Terminal for Home Assistant
 
-Home Assistant add-on repository for running OpenAI Codex CLI from the Home Assistant sidebar.
+Run OpenAI Codex directly from the Home Assistant sidebar.
 
-## Add-ons
+This repository provides a Home Assistant add-on named **Codex Terminal**. It opens a browser terminal inside Home Assistant, starts the Codex CLI, and gives Codex Home Assistant-aware skills, context, diagnostics, MCP tools, and safer editing workflows.
 
-- [Codex Terminal](./codex-terminal): web terminal with Codex CLI, persistent auth, Home Assistant context, and optional Home Assistant MCP integration.
+## What It Does
 
-## Highlights
+Codex Terminal is useful when you want help with:
 
-- Home Assistant best-practices skills preinstalled for Codex.
+- Home Assistant YAML and packages.
+- Automations, scripts, scenes, and helpers.
+- Lovelace dashboards.
+- Template sensors and Jinja debugging.
+- Add-on development.
+- Log review and troubleshooting.
+- Safe refactors such as entity renames or helper replacement.
+
+The add-on starts in `/config`, so Codex can work directly with your Home Assistant configuration files.
+
+## Features
+
+- Sidebar access through Home Assistant ingress.
+- Interactive Codex CLI in a browser terminal.
+- Persistent Codex auth and config in `/data/.codex`.
+- `tmux` session persistence when the sidebar is closed and reopened.
+- Home Assistant context generated into `$CODEX_HOME/AGENTS.md`.
+- Context refresh cache with a 30 minute default.
+- Bundled Home Assistant Codex skills:
+  - `home-assistant`
+  - `home-assistant-best-practices`
+  - `ha-automation-author`
+  - `ha-dashboard-author`
+  - `ha-template-debugger`
+  - `ha-safe-refactor`
+  - `ha-add-on-developer`
+  - `ha-troubleshooter`
+- Optional MCP integration with:
+  - `ha-mcp`
+  - the official Home Assistant MCP Server endpoint
+  - both
+  - disabled mode
 - `codex-ha doctor` diagnostics.
 - `ha-safe-edit` backup and validation workflow.
-- MCP mode selection for `ha-mcp`, the official HA MCP Server endpoint, both, or disabled.
-- Rich generated context for entities, automations, add-ons, repairs, logs, integrations, and unavailable entities.
+- Persistent APK and pip package installation.
 
 ## Installation
 
 1. Open Home Assistant.
 2. Go to **Settings > Add-ons > Add-on Store**.
-3. Open the menu and choose **Repositories**.
-4. Add this repository URL.
-5. Install **Codex Terminal**.
-6. Start the add-on and open it from the sidebar.
+3. Open the add-on store menu.
+4. Choose **Repositories**.
+5. Add this repository URL:
 
-## Security
+```text
+https://github.com/A-Raileanu/home-assistant-codex-terminal
+```
 
-This add-on gives Codex access to your Home Assistant configuration and APIs. The MCP integration can inspect and control Home Assistant entities. Only use it if you understand that Codex can suggest and run commands in this environment.
+6. Install **Codex Terminal**.
+7. Start the add-on.
+8. Open **Codex Terminal** from the sidebar.
+
+## First Run
+
+Open the sidebar terminal and authenticate Codex:
+
+```bash
+codex login
+```
+
+Then start Codex in the Home Assistant config directory:
+
+```bash
+codex --cd /config
+```
+
+The add-on stores Codex configuration and auth in:
+
+```text
+/data/.codex
+```
+
+That data persists across add-on restarts and updates.
+
+## Recommended First Commands
+
+Run diagnostics:
+
+```bash
+codex-ha doctor
+```
+
+Check MCP registration:
+
+```bash
+codex mcp list
+```
+
+Refresh Home Assistant context manually:
+
+```bash
+ha-context --force
+```
+
+Validate Home Assistant config:
+
+```bash
+codex-ha check-config
+```
+
+## Home Assistant Context
+
+On startup, the add-on generates Home Assistant context for Codex. This includes system info, entity summaries, installed add-ons, integrations, automations, scripts, scenes, unavailable entities, repairs, recorder info, recent errors, and add-on log samples.
+
+By default, automatic context refresh is cached for 30 minutes:
+
+```yaml
+ha_context_refresh_minutes: 30
+```
+
+Manual commands:
+
+```bash
+ha-context
+ha-context --force
+ha-context --full --force
+```
+
+Use `--force` after major changes, such as adding integrations, renaming entities, changing many automations, or troubleshooting new errors.
+
+## Safe Editing
+
+Use `ha-safe-edit` when changing Home Assistant config files. It creates backups and runs validation.
+
+Create a backup:
+
+```bash
+ha-safe-edit backup /config/configuration.yaml
+```
+
+Run YAML and Home Assistant config checks:
+
+```bash
+ha-safe-edit check /config/configuration.yaml
+```
+
+Run an edit command with backup and validation:
+
+```bash
+ha-safe-edit /config/automations.yaml -- sh -c 'your-edit-command'
+```
+
+Backups are stored under:
+
+```text
+/data/safe-edit-backups
+```
+
+## MCP Modes
+
+MCP lets Codex use Home Assistant tools instead of only reading files.
+
+Default:
+
+```yaml
+mcp_mode: "ha-mcp"
+```
+
+Available modes:
+
+| Mode | Description |
+| --- | --- |
+| `ha-mcp` | Register the community `homeassistant-ai/ha-mcp` stdio server. |
+| `official` | Register the official Home Assistant MCP Server streamable HTTP endpoint. |
+| `both` | Register both MCP servers. |
+| `disabled` | Do not configure MCP. |
+
+For the official Home Assistant MCP Server mode, configure the Home Assistant MCP Server integration first, then set:
+
+```yaml
+mcp_mode: "official"
+official_mcp_url: "http://supervisor/core/api/mcp"
+```
+
+Use both:
+
+```yaml
+mcp_mode: "both"
+```
+
+Disable MCP:
+
+```yaml
+mcp_mode: "disabled"
+```
+
+## Add-on Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `auto_launch_codex` | `true` | Start Codex automatically when opening the terminal. |
+| `ha_smart_context` | `true` | Generate Home Assistant context and skills on startup. |
+| `ha_context_refresh_minutes` | `30` | Skip automatic context regeneration while cached context is newer than this. |
+| `enable_ha_mcp` | `true` | Enable MCP setup. |
+| `mcp_mode` | `ha-mcp` | Choose `ha-mcp`, `official`, `both`, or `disabled`. |
+| `official_mcp_url` | `http://supervisor/core/api/mcp` | Official Home Assistant MCP endpoint URL. |
+| `readonly_mode` | `false` | Make helper commands refuse edits. |
+| `require_backup_before_edit` | `true` | Keep backup-first editing as the expected workflow. |
+| `enable_device_control` | `false` | Safety marker for direct device-control workflows. |
+| `enable_file_tools` | `true` | Allow file helper workflows. |
+| `enable_yaml_editing` | `true` | Allow `ha-safe-edit` YAML workflows. |
+| `max_log_lines` | `80` | Limit log samples in generated context and helper output. |
+| `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
+| `persistent_pip_packages` | `[]` | Python packages to install on every startup. |
+
+## Useful Commands
+
+```bash
+codex --cd /config
+codex login
+codex resume --last
+codex mcp list
+codex-ha doctor
+codex-ha safety
+codex-ha check-config
+codex-ha logs <addon_slug>
+ha-context
+ha-context --force
+ha-safe-edit check
+health-check
+persist-install list
+```
+
+## Persistent Packages
+
+Install extra packages that should be reinstalled on add-on startup:
+
+```bash
+persist-install apk htop
+persist-install pip requests
+persist-install list
+```
+
+You can also configure packages in add-on options:
+
+```yaml
+persistent_apk_packages:
+  - htop
+persistent_pip_packages:
+  - requests
+```
+
+## Updating
+
+1. Pull the latest add-on repository updates in Home Assistant.
+2. Update **Codex Terminal** from the add-on page.
+3. Restart the add-on.
+4. Open the sidebar terminal.
+5. Run:
+
+```bash
+codex-ha doctor
+```
+
+## Troubleshooting
+
+### The sidebar terminal does not load
+
+Check the add-on logs and verify the add-on is running. The terminal is served by `ttyd` through Home Assistant ingress.
+
+### Codex asks me to log in again
+
+Run:
+
+```bash
+codex login
+```
+
+Auth should persist in `/data/.codex`. If it does not, check add-on logs for `/data` permission errors.
+
+### Codex does not see Home Assistant skills
+
+Run:
+
+```bash
+validate-skills
+codex-ha doctor
+```
+
+Restart the add-on if skills were just updated.
+
+### Context looks stale
+
+Run:
+
+```bash
+ha-context --force
+```
+
+Or lower:
+
+```yaml
+ha_context_refresh_minutes: 10
+```
+
+### MCP is not working
+
+Check:
+
+```bash
+codex mcp list
+codex-ha doctor
+```
+
+For `official` mode, make sure the Home Assistant MCP Server integration is configured. A `404` from `/api/mcp` usually means the integration is not enabled.
+
+### Home Assistant config validation fails
+
+Run:
+
+```bash
+ha-safe-edit check
+```
+
+Review the output before restarting Home Assistant.
+
+## Security Notes
+
+This add-on is powerful. Codex can read mapped Home Assistant configuration files, run terminal commands, and, when MCP is enabled, interact with Home Assistant APIs.
+
+Recommended safety defaults:
+
+```yaml
+readonly_mode: false
+require_backup_before_edit: true
+enable_device_control: false
+enable_yaml_editing: true
+mcp_mode: "ha-mcp"
+```
+
+Set this for a more conservative setup:
+
+```yaml
+readonly_mode: true
+mcp_mode: "disabled"
+```
+
+Review commands before running them on a live home. Be especially careful with service calls that unlock doors, open covers, disable alarms, change climate settings, or control high-power devices.
+
+## Repository Layout
+
+```text
+repository.yaml
+codex-terminal/
+  config.yaml
+  build.yaml
+  Dockerfile
+  run.sh
+  scripts/
+  skills/
+```
+
+## License
+
+This repository is licensed under the Apache License 2.0.
+
+Bundled Home Assistant best-practices skill content from `homeassistant-ai/skills` is included under its MIT license; see `codex-terminal/skills/home-assistant-best-practices/LICENSE`.
