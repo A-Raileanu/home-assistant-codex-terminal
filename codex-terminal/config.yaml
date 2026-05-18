@@ -1,7 +1,7 @@
 ---
 name: "Codex Terminal"
 description: "Terminal with OpenAI Codex CLI, persistent auth, Home Assistant context, and MCP"
-version: "0.1.1"
+version: "0.2.0"
 slug: "codex_terminal"
 init: false
 
@@ -27,12 +27,28 @@ options:
   auto_launch_codex: true
   ha_smart_context: true
   enable_ha_mcp: true
+  mcp_mode: "ha-mcp"
+  official_mcp_url: "http://supervisor/core/api/mcp"
+  readonly_mode: false
+  require_backup_before_edit: true
+  enable_device_control: false
+  enable_file_tools: true
+  enable_yaml_editing: true
+  max_log_lines: 80
   persistent_apk_packages: []
   persistent_pip_packages: []
 schema:
   auto_launch_codex: bool?
   ha_smart_context: bool?
   enable_ha_mcp: bool?
+  mcp_mode: str?
+  official_mcp_url: str?
+  readonly_mode: bool?
+  require_backup_before_edit: bool?
+  enable_device_control: bool?
+  enable_file_tools: bool?
+  enable_yaml_editing: bool?
+  max_log_lines: int?
   persistent_apk_packages:
     - str
   persistent_pip_packages:

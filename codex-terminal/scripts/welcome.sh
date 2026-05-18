@@ -44,7 +44,9 @@ main() {
     echo "    codex --cd /config"
     echo "    codex login"
     echo "    codex mcp list"
+    echo "    codex-ha doctor"
     echo "    ha-context"
+    echo "    ha-safe-edit check"
     echo ""
     printf "  Press Enter to continue..."
     read -r

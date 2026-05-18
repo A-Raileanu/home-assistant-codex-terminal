@@ -4,7 +4,7 @@ set -e
 
 missing=0
 
-for bin in codex node npm ttyd tmux git rg jq curl uvx; do
+for bin in codex codex-ha ha-context ha-safe-edit validate-skills node npm ttyd tmux git rg jq curl uvx bwrap; do
     if command -v "$bin" >/dev/null 2>&1; then
         echo "OK: $bin"
     else

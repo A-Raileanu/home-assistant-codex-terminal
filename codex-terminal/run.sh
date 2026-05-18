@@ -35,6 +35,12 @@ init_environment() {
     export HOME_ASSISTANT_URL="http://supervisor/core"
     export HOMEASSISTANT_URL="http://supervisor/core"
     export HOMEASSISTANT_TOKEN="${SUPERVISOR_TOKEN:-}"
+    export CODEX_HA_READONLY_MODE="$(bashio::config "readonly_mode" "false")"
+    export CODEX_HA_REQUIRE_BACKUP="$(bashio::config "require_backup_before_edit" "true")"
+    export CODEX_HA_ENABLE_DEVICE_CONTROL="$(bashio::config "enable_device_control" "false")"
+    export CODEX_HA_ENABLE_FILE_TOOLS="$(bashio::config "enable_file_tools" "true")"
+    export CODEX_HA_ENABLE_YAML_EDITING="$(bashio::config "enable_yaml_editing" "true")"
+    export MAX_LOG_LINES="$(bashio::config "max_log_lines" "80")"
 
     migrate_legacy_codex_files "$codex_home"
     install_tmux_config
@@ -75,9 +81,12 @@ install_runtime_helpers() {
 
     for helper in \
         codex-session-picker \
+        codex-ha \
         ha-context \
+        ha-safe-edit \
         health-check \
         persist-install \
+        validate-skills \
         welcome; do
         if [ -f "/opt/scripts/${helper}.sh" ]; then
             cp "/opt/scripts/${helper}.sh" "/usr/local/bin/${helper}"
@@ -86,6 +95,17 @@ install_runtime_helpers() {
     done
 
     bashio::addon.version > /opt/scripts/addon-version 2>/dev/null || echo "unknown" > /opt/scripts/addon-version
+}
+
+install_bundled_skills() {
+    if [ ! -d /opt/skills ]; then
+        bashio::log.info "No bundled Codex skills found"
+        return 0
+    fi
+
+    bashio::log.info "Installing bundled Codex skills..."
+    mkdir -p "${CODEX_HOME}/skills"
+    cp -a /opt/skills/. "${CODEX_HOME}/skills/"
 }
 
 install_persistent_packages() {
@@ -124,6 +144,15 @@ install_persistent_packages() {
         bashio::log.info "Installing persistent pip packages: ${pip_packages}"
         # shellcheck disable=SC2086
         pip3 install --break-system-packages --no-cache-dir $pip_packages || bashio::log.warning "Some pip packages failed to install"
+    fi
+}
+
+validate_codex_skills() {
+    if command -v validate-skills >/dev/null 2>&1; then
+        bashio::log.info "Validating Codex skills..."
+        validate-skills "${CODEX_HOME}/skills" 2>&1 | while IFS= read -r line; do
+            bashio::log.info "$line"
+        done || bashio::log.warning "One or more Codex skills failed validation"
     fi
 }
 
@@ -208,7 +237,9 @@ main() {
     install_runtime_helpers
     run_health_check
     install_persistent_packages
+    install_bundled_skills
     generate_ha_context
+    validate_codex_skills
     setup_ha_mcp
     start_web_terminal
 }

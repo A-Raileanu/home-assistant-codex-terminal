@@ -11,6 +11,8 @@ Terminal interface for OpenAI Codex CLI in Home Assistant.
 - `tmux` session persistence across sidebar reconnects.
 - Generated Home Assistant context and Codex skill.
 - Optional Home Assistant MCP server registration.
+- Bundled HA best-practices, automation, dashboard, template, refactor, add-on, and troubleshooting skills.
+- `codex-ha doctor` diagnostics and `ha-safe-edit` safe config workflow.
 
 ## Usage
 
@@ -25,6 +27,8 @@ Refresh Home Assistant context with:
 
 ```bash
 ha-context
+codex-ha doctor
+ha-safe-edit check
 ```
 
 List MCP servers with:

@@ -32,6 +32,7 @@ WORKDIR /config
 
 COPY run.sh /run.sh
 COPY scripts/ /opt/scripts/
+COPY skills/ /opt/skills/
 
 RUN chmod +x /run.sh \
     && chmod +x /opt/scripts/*.sh

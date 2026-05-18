@@ -6,6 +6,14 @@ Home Assistant add-on repository for running OpenAI Codex CLI from the Home Assi
 
 - [Codex Terminal](./codex-terminal): web terminal with Codex CLI, persistent auth, Home Assistant context, and optional Home Assistant MCP integration.
 
+## Highlights
+
+- Home Assistant best-practices skills preinstalled for Codex.
+- `codex-ha doctor` diagnostics.
+- `ha-safe-edit` backup and validation workflow.
+- MCP mode selection for `ha-mcp`, the official HA MCP Server endpoint, both, or disabled.
+- Rich generated context for entities, automations, add-ons, repairs, logs, integrations, and unavailable entities.
+
 ## Installation
 
 1. Open Home Assistant.

@@ -5,6 +5,7 @@ set -e
 SUPERVISOR_URL="http://supervisor"
 OUTPUT_FILE="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/home-assistant"
+MAX_LOG_LINES="${MAX_LOG_LINES:-80}"
 FULL_MODE=false
 
 while [[ $# -gt 0 ]]; do
@@ -140,6 +141,115 @@ section_recent_errors() {
     echo '```'
 }
 
+section_integrations() {
+    local config_entries
+    config_entries="$(ha_api_call "config/config_entries/entry")"
+
+    if [ -z "$config_entries" ] || ! echo "$config_entries" | jq -e '.' >/dev/null 2>&1; then
+        echo "Unable to retrieve integration entries."
+        return
+    fi
+
+    echo "$config_entries" | jq -r '
+        if type == "array" then .
+        elif .data and (.data | type == "array") then .data
+        else [] end |
+        map(select(.disabled_by == null)) |
+        group_by(.domain // "unknown") |
+        map({domain: .[0].domain, count: length}) |
+        sort_by(.domain) |
+        .[] | "- \(.domain): \(.count)"
+    ' 2>/dev/null
+}
+
+section_automation_inventory() {
+    local states
+    states="$(ha_api_call "states")"
+
+    if [ -z "$states" ] || ! echo "$states" | jq -e '.' >/dev/null 2>&1; then
+        echo "Unable to retrieve automation/script/scene inventory."
+        return
+    fi
+
+    echo "$states" | jq -r '
+        map(select(.entity_id | test("^(automation|script|scene)\\."))) |
+        group_by(.entity_id | split(".")[0])[] |
+        "### " + (.[0].entity_id | split(".")[0]) + " (" + (length | tostring) + ")\n" +
+        (.[0:30] | map("- `" + .entity_id + "`: " + (.attributes.friendly_name // .entity_id) + " [" + .state + "]") | join("\n")) + "\n"
+    ' 2>/dev/null
+}
+
+section_unavailable_entities() {
+    local states
+    states="$(ha_api_call "states")"
+
+    if [ -z "$states" ] || ! echo "$states" | jq -e '.' >/dev/null 2>&1; then
+        echo "Unable to retrieve entity states."
+        return
+    fi
+
+    local count
+    count="$(echo "$states" | jq '[.[] | select(.state == "unavailable" or .state == "unknown")] | length')"
+    echo "Total unavailable/unknown: ${count}"
+
+    echo "$states" | jq -r '
+        [.[] | select(.state == "unavailable" or .state == "unknown")] |
+        group_by(.entity_id | split(".")[0]) |
+        .[] |
+        "### " + (.[0].entity_id | split(".")[0]) + "\n" +
+        (.[0:25] | map("- `" + .entity_id + "`: " + .state) | join("\n")) + "\n"
+    ' 2>/dev/null
+}
+
+section_repairs() {
+    local repairs
+    repairs="$(api_call "resolution/info")"
+
+    if [ -z "$repairs" ] || ! echo "$repairs" | jq -e '.data' >/dev/null 2>&1; then
+        echo "Unable to retrieve repairs/issues."
+        return
+    fi
+
+    echo "$repairs" | jq -r '
+        .data |
+        "- Unsupported: \((.unsupported // []) | length)\n" +
+        "- Unhealthy: \((.unhealthy // []) | length)\n" +
+        "- Suggestions: \((.suggestions // []) | length)\n" +
+        "- Issues: \((.issues // []) | length)"
+    ' 2>/dev/null
+}
+
+section_recorder() {
+    local db_path="/config/home-assistant_v2.db"
+
+    if [ -f "$db_path" ]; then
+        local size
+        size="$(du -h "$db_path" 2>/dev/null | awk '{print $1}')"
+        echo "- Recorder database: ${db_path} (${size})"
+    else
+        echo "- Recorder database not found at ${db_path}"
+    fi
+}
+
+section_addon_logs() {
+    local addons_data
+    addons_data="$(api_call "addons")"
+
+    if [ -z "$addons_data" ] || ! echo "$addons_data" | jq -e '.data.addons' >/dev/null 2>&1; then
+        echo "Unable to retrieve add-on logs."
+        return
+    fi
+
+    echo "$addons_data" | jq -r '.data.addons[] | select(.installed == true) | .slug' 2>/dev/null | head -10 | while IFS= read -r slug; do
+        [ -n "$slug" ] || continue
+        echo "### ${slug}"
+        echo '```text'
+        api_call "addons/${slug}/logs" | tail -"${MAX_LOG_LINES}" | cut -c1-220
+        echo '```'
+        echo ""
+    done
+}
+
 write_skill() {
     mkdir -p "$SKILL_DIR"
     cat > "$SKILL_DIR/SKILL.md" <<'SKILL'
@@ -157,14 +267,19 @@ You are running inside a Home Assistant add-on container.
 - `/config` is the mapped Home Assistant configuration directory.
 - `$CODEX_HOME/AGENTS.md` contains generated context for this installation.
 - `/data` persists across add-on restarts and updates.
+- `ha-context` refreshes live context.
+- `codex-ha doctor` checks auth, API access, MCP, skills, and safety options.
+- `ha-safe-edit` backs up files and validates YAML/config checks around edits.
 
 ## Safety
 
 - Treat this as a live home automation system.
 - Prefer reading and validating before editing.
-- Back up files before risky changes.
-- Avoid destructive service calls unless the user explicitly requested them.
+- Use `ha-safe-edit` before changing YAML or other `/config` files.
+- Back up files before risky changes. Keep backup paths in your final response.
+- Treat device control as opt-in. Avoid service calls unless the user explicitly requested them.
 - Explain device-control side effects before issuing service calls.
+- Never edit `.storage/` directly unless the user explicitly accepts the risk and no API path exists.
 
 ## APIs
 
@@ -177,10 +292,22 @@ You are running inside a Home Assistant add-on container.
 
 ```bash
 ha-context
+codex-ha doctor
+ha-safe-edit check
 codex mcp list
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/info
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/api/states
 ```
+
+## Included Skills
+
+- `home-assistant-best-practices`
+- `ha-automation-author`
+- `ha-dashboard-author`
+- `ha-template-debugger`
+- `ha-safe-refactor`
+- `ha-add-on-developer`
+- `ha-troubleshooter`
 SKILL
 }
 
@@ -208,9 +335,33 @@ generate_agents_md() {
         echo ""
         section_addons
         echo ""
+        echo "## Integrations"
+        echo ""
+        section_integrations
+        echo ""
+        echo "## Automations, Scripts, And Scenes"
+        echo ""
+        section_automation_inventory
+        echo ""
+        echo "## Unavailable Or Unknown Entities"
+        echo ""
+        section_unavailable_entities
+        echo ""
+        echo "## Repairs And System Health"
+        echo ""
+        section_repairs
+        echo ""
+        echo "## Recorder"
+        echo ""
+        section_recorder
+        echo ""
         echo "## Recent Errors"
         echo ""
         section_recent_errors
+        echo ""
+        echo "## Add-on Log Samples"
+        echo ""
+        section_addon_logs
         echo ""
         echo "## API Access"
         echo ""

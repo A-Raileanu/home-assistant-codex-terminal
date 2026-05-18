@@ -67,7 +67,7 @@ jobs:
         if: matrix.arch == 'amd64'
         run: |
           docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c '
-            for script in /run.sh /opt/scripts/codex-session-picker.sh /opt/scripts/setup-ha-mcp.sh /opt/scripts/health-check.sh /opt/scripts/welcome.sh; do
+            for script in /run.sh /opt/scripts/codex-session-picker.sh /opt/scripts/codex-ha.sh /opt/scripts/ha-safe-edit.sh /opt/scripts/setup-ha-mcp.sh /opt/scripts/validate-skills.sh /opt/scripts/health-check.sh /opt/scripts/welcome.sh; do
               if [ ! -x "$script" ]; then
                 echo "FAIL: $script is not executable"
                 exit 1
@@ -80,7 +80,7 @@ jobs:
         if: matrix.arch == 'amd64'
         run: |
           docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c '
-            for bin in codex node npm ttyd tmux git rg jq curl uvx; do
+            for bin in codex node npm ttyd tmux git rg jq curl uvx bwrap; do
               if ! command -v "$bin" >/dev/null 2>&1; then
                 echo "FAIL: $bin not found"
                 exit 1

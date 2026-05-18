@@ -24,6 +24,9 @@ Authentication and Codex configuration persist in `/data/.codex`.
 | `auto_launch_codex` | `true` | Automatically launch Codex when opening the terminal. |
 | `ha_smart_context` | `true` | Generate Home Assistant context and a Home Assistant Codex skill on startup. |
 | `enable_ha_mcp` | `true` | Register the Home Assistant MCP server with Codex. |
+| `mcp_mode` | `ha-mcp` | Choose `ha-mcp`, `official`, `both`, or `disabled`. |
+| `readonly_mode` | `false` | Prevent helper-command edits. |
+| `enable_device_control` | `false` | Safety marker for device-control workflows. |
 | `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
 | `persistent_pip_packages` | `[]` | Python packages to install on every startup. |
 
@@ -39,6 +42,7 @@ It writes:
 
 - `$CODEX_HOME/AGENTS.md`
 - `$CODEX_HOME/skills/home-assistant/SKILL.md`
+- bundled skills including `home-assistant-best-practices`, automation, dashboard, template, refactor, add-on, and troubleshooting helpers
 
 The context includes Home Assistant version, installed add-ons, entity counts, recent errors, and useful API examples.
 
@@ -57,6 +61,19 @@ Check it with:
 
 ```bash
 codex mcp list
+```
+
+Run diagnostics with:
+
+```bash
+codex-ha doctor
+```
+
+Use safe editing with:
+
+```bash
+ha-safe-edit backup /config/configuration.yaml
+ha-safe-edit check
 ```
 
 The MCP server gives Codex Home Assistant tools. Treat it as broad control over your Home Assistant instance.
