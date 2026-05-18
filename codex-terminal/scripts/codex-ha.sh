@@ -52,6 +52,7 @@ show_safety() {
     echo "- enable_file_tools: $(option enable_file_tools true)"
     echo "- enable_yaml_editing: $(option enable_yaml_editing true)"
     echo "- max_log_lines: $(option max_log_lines 80)"
+    echo "- ha_context_refresh_minutes: $(option ha_context_refresh_minutes 30)"
 }
 
 doctor() {
@@ -131,7 +132,8 @@ Usage: codex-ha <command>
 
 Commands:
   doctor        Check Codex, HA API, MCP, skills, and safety options
-  context       Regenerate Home Assistant context
+  context       Regenerate Home Assistant context when cache is stale
+  context-force Regenerate Home Assistant context immediately
   check-config  Run Home Assistant configuration check
   mcp           List Codex MCP servers
   safety        Print safety options
@@ -145,6 +147,7 @@ shift || true
 case "$command" in
     doctor) doctor "$@" ;;
     context) ha-context "$@" ;;
+    context-force) ha-context --force "$@" ;;
     check-config) check_config ;;
     mcp) codex mcp list ;;
     safety) show_safety ;;

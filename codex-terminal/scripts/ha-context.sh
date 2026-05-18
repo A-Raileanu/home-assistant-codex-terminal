@@ -6,20 +6,30 @@ SUPERVISOR_URL="http://supervisor"
 OUTPUT_FILE="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/home-assistant"
 MAX_LOG_LINES="${MAX_LOG_LINES:-80}"
+REFRESH_MINUTES="${HA_CONTEXT_REFRESH_MINUTES:-30}"
 FULL_MODE=false
+FORCE_REFRESH=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --force)
+            FORCE_REFRESH=true
+            shift
+            ;;
         --full)
             FULL_MODE=true
             shift
+            ;;
+        --refresh-minutes)
+            REFRESH_MINUTES="$2"
+            shift 2
             ;;
         --output)
             OUTPUT_FILE="$2"
             shift 2
             ;;
         --help)
-            echo "Usage: ha-context [--full] [--output FILE]"
+            echo "Usage: ha-context [--force] [--full] [--refresh-minutes MINUTES] [--output FILE]"
             exit 0
             ;;
         *)
@@ -53,6 +63,38 @@ check_prerequisites() {
             exit 1
         fi
     done
+}
+
+context_is_fresh() {
+    local file="$1"
+    local refresh_minutes="$2"
+
+    if [ "$FORCE_REFRESH" = true ]; then
+        return 1
+    fi
+
+    if [ ! -f "$file" ]; then
+        return 1
+    fi
+
+    if ! [[ "$refresh_minutes" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+
+    if [ "$refresh_minutes" -le 0 ]; then
+        return 1
+    fi
+
+    python3 - "$file" "$refresh_minutes" <<'PY'
+import pathlib
+import sys
+import time
+
+path = pathlib.Path(sys.argv[1])
+refresh_seconds = int(sys.argv[2]) * 60
+age = time.time() - path.stat().st_mtime
+sys.exit(0 if age < refresh_seconds else 1)
+PY
 }
 
 section_system_info() {
@@ -379,6 +421,13 @@ generate_agents_md() {
 main() {
     check_prerequisites
     write_skill
+
+    if context_is_fresh "$OUTPUT_FILE" "$REFRESH_MINUTES"; then
+        echo "Home Assistant context is fresh; skipping refresh (${OUTPUT_FILE}, refresh window ${REFRESH_MINUTES} minutes)" >&2
+        echo "Run 'ha-context --force' to refresh immediately." >&2
+        exit 0
+    fi
+
     generate_agents_md
     echo "Home Assistant context written to ${OUTPUT_FILE}" >&2
     echo "Home Assistant skill written to ${SKILL_DIR}/SKILL.md" >&2

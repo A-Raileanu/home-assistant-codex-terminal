@@ -23,6 +23,7 @@ Authentication and Codex configuration persist in `/data/.codex`.
 | --- | --- | --- |
 | `auto_launch_codex` | `true` | Automatically launch Codex when opening the terminal. |
 | `ha_smart_context` | `true` | Generate Home Assistant context and a Home Assistant Codex skill on startup. |
+| `ha_context_refresh_minutes` | `30` | Only regenerate automatic context when the cached file is older than this many minutes. |
 | `enable_ha_mcp` | `true` | Register the Home Assistant MCP server with Codex. |
 | `mcp_mode` | `ha-mcp` | Choose `ha-mcp`, `official`, `both`, or `disabled`. |
 | `readonly_mode` | `false` | Prevent helper-command edits. |
@@ -36,6 +37,7 @@ Run this command to refresh generated context:
 
 ```bash
 ha-context
+ha-context --force
 ```
 
 It writes:

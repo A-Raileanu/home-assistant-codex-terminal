@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Add `ha_context_refresh_minutes` option with a 30 minute default.
+- Skip automatic `ha-context` regeneration while cached context is fresh.
+- Add `ha-context --force` and `--refresh-minutes` controls.
+
 ## 0.2.0
 
 - Bundle Home Assistant best-practices skill content.

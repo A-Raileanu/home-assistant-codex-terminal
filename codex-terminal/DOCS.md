@@ -18,6 +18,7 @@ This add-on provides a web-based terminal with OpenAI Codex CLI preinstalled. It
 | --- | --- | --- |
 | `auto_launch_codex` | `true` | Start Codex automatically when opening the terminal. |
 | `ha_smart_context` | `true` | Generate Home Assistant context and a Codex skill. |
+| `ha_context_refresh_minutes` | `30` | Skip automatic context regeneration while `$CODEX_HOME/AGENTS.md` is newer than this. |
 | `enable_ha_mcp` | `true` | Configure the Home Assistant MCP server for Codex. |
 | `mcp_mode` | `ha-mcp` | MCP mode: `ha-mcp`, `official`, `both`, or `disabled`. |
 | `official_mcp_url` | `http://supervisor/core/api/mcp` | Streamable HTTP endpoint for the official HA MCP Server integration. |
@@ -40,6 +41,7 @@ codex mcp list
 codex-ha doctor
 codex-ha check-config
 ha-context
+ha-context --force
 ha-safe-edit check
 health-check
 persist-install list

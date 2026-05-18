@@ -45,7 +45,7 @@ main() {
     echo "    codex login"
     echo "    codex mcp list"
     echo "    codex-ha doctor"
-    echo "    ha-context"
+    echo "    ha-context --force"
     echo "    ha-safe-edit check"
     echo ""
     printf "  Press Enter to continue..."

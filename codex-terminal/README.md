@@ -27,6 +27,7 @@ Refresh Home Assistant context with:
 
 ```bash
 ha-context
+ha-context --force
 codex-ha doctor
 ha-safe-edit check
 ```

@@ -41,6 +41,7 @@ init_environment() {
     export CODEX_HA_ENABLE_FILE_TOOLS="$(bashio::config "enable_file_tools" "true")"
     export CODEX_HA_ENABLE_YAML_EDITING="$(bashio::config "enable_yaml_editing" "true")"
     export MAX_LOG_LINES="$(bashio::config "max_log_lines" "80")"
+    export HA_CONTEXT_REFRESH_MINUTES="$(bashio::config "ha_context_refresh_minutes" "30")"
 
     migrate_legacy_codex_files "$codex_home"
     install_tmux_config
@@ -158,7 +159,9 @@ validate_codex_skills() {
 
 generate_ha_context() {
     local ha_smart_context
+    local refresh_minutes
     ha_smart_context="$(bashio::config "ha_smart_context" "true")"
+    refresh_minutes="$(bashio::config "ha_context_refresh_minutes" "30")"
 
     if [ "$ha_smart_context" != "true" ]; then
         bashio::log.info "HA smart context disabled"
@@ -166,8 +169,8 @@ generate_ha_context() {
     fi
 
     if command -v ha-context >/dev/null 2>&1; then
-        bashio::log.info "Generating Home Assistant context for Codex..."
-        ha-context 2>&1 | while IFS= read -r line; do
+        bashio::log.info "Refreshing Home Assistant context when older than ${refresh_minutes} minutes..."
+        ha-context --refresh-minutes "$refresh_minutes" 2>&1 | while IFS= read -r line; do
             bashio::log.info "$line"
         done || bashio::log.warning "HA context generation failed, continuing"
     fi

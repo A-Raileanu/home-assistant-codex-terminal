@@ -1,7 +1,7 @@
 ---
 name: "Codex Terminal"
 description: "Terminal with OpenAI Codex CLI, persistent auth, Home Assistant context, and MCP"
-version: "0.2.0"
+version: "0.2.1"
 slug: "codex_terminal"
 init: false
 
@@ -26,6 +26,7 @@ ports_description:
 options:
   auto_launch_codex: true
   ha_smart_context: true
+  ha_context_refresh_minutes: 30
   enable_ha_mcp: true
   mcp_mode: "ha-mcp"
   official_mcp_url: "http://supervisor/core/api/mcp"
@@ -40,6 +41,7 @@ options:
 schema:
   auto_launch_codex: bool?
   ha_smart_context: bool?
+  ha_context_refresh_minutes: int?
   enable_ha_mcp: bool?
   mcp_mode: str?
   official_mcp_url: str?
