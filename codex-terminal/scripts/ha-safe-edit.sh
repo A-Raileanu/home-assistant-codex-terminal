@@ -53,7 +53,19 @@ backup_file() {
     dest="${BACKUP_ROOT}${file}.${timestamp}.bak"
     mkdir -p "$(dirname "$dest")"
     cp -a "$file" "$dest"
+    prune_old_backups
     echo "$dest"
+}
+
+prune_old_backups() {
+    local retention_days
+    retention_days="$(option safe_edit_backup_retention_days 30)"
+
+    if ! [[ "$retention_days" =~ ^[0-9]+$ ]] || [ "$retention_days" -le 0 ]; then
+        return 0
+    fi
+
+    find "$BACKUP_ROOT" -type f -name "*.bak" -mtime +"$retention_days" -delete 2>/dev/null || true
 }
 
 yaml_check_file() {

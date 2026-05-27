@@ -24,10 +24,15 @@ Authentication and Codex configuration persist in `/data/.codex`.
 | `auto_launch_codex` | `true` | Automatically launch Codex when opening the terminal. |
 | `ha_smart_context` | `true` | Generate Home Assistant context and a Home Assistant Codex skill on startup. |
 | `ha_context_refresh_minutes` | `30` | Only regenerate automatic context when the cached file is older than this many minutes. |
+| `context_detail_level` | `standard` | Context verbosity: `summary`, `standard`, or `full`. |
+| `include_addon_logs` | `false` | Include add-on log samples in generated context. |
 | `enable_ha_mcp` | `true` | Register the Home Assistant MCP server with Codex. |
 | `mcp_mode` | `ha-mcp` | Choose `ha-mcp`, `official`, `both`, or `disabled`. |
+| `ha_mcp_version` | `3.5.1` | Version used for `ha-mcp` server registration. |
 | `readonly_mode` | `false` | Prevent helper-command edits. |
 | `enable_device_control` | `false` | Safety marker for device-control workflows. |
+| `codex_full_permissions` | `false` | Enable full bypass mode (`--dangerously-bypass-approvals-and-sandbox`) when needed. |
+| `safe_edit_backup_retention_days` | `30` | Remove backup files older than this many days. |
 | `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
 | `persistent_pip_packages` | `[]` | Python packages to install on every startup. |
 
@@ -56,7 +61,7 @@ When `enable_ha_mcp` is true, startup runs:
 codex mcp add home-assistant \
   --env HOMEASSISTANT_URL=http://supervisor/core \
   --env HOMEASSISTANT_TOKEN=$SUPERVISOR_TOKEN \
-  -- uvx --index-strategy unsafe-best-match ha-mcp@3.5.1
+  -- uvx --index-strategy unsafe-best-match ha-mcp@$HA_MCP_VERSION
 ```
 
 Check it with:
@@ -78,6 +83,7 @@ ha-safe-edit backup /config/configuration.yaml
 ha-safe-edit check
 ```
 
+MCP registration is skipped when `readonly_mode` is enabled or `enable_device_control` is false.
 The MCP server gives Codex Home Assistant tools. Treat it as broad control over your Home Assistant instance.
 
 ## Persistent Packages

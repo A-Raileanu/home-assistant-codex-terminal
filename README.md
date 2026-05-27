@@ -201,16 +201,20 @@ mcp_mode: "disabled"
 | `auto_launch_codex` | `true` | Start Codex automatically when opening the terminal. |
 | `ha_smart_context` | `true` | Generate Home Assistant context and skills on startup. |
 | `ha_context_refresh_minutes` | `30` | Skip automatic context regeneration while cached context is newer than this. |
+| `context_detail_level` | `standard` | Generated context level: `summary`, `standard`, or `full`. |
+| `include_addon_logs` | `false` | Include add-on log samples in generated context. |
 | `enable_ha_mcp` | `true` | Enable MCP setup. |
 | `mcp_mode` | `ha-mcp` | Choose `ha-mcp`, `official`, `both`, or `disabled`. |
 | `official_mcp_url` | `http://supervisor/core/api/mcp` | Official Home Assistant MCP endpoint URL. |
+| `ha_mcp_version` | `3.5.1` | Version used for `ha-mcp` server registration. |
 | `readonly_mode` | `false` | Make helper commands refuse edits. |
 | `require_backup_before_edit` | `true` | Keep backup-first editing as the expected workflow. |
 | `enable_device_control` | `false` | Safety marker for direct device-control workflows. |
 | `enable_file_tools` | `true` | Allow file helper workflows. |
 | `enable_yaml_editing` | `true` | Allow `ha-safe-edit` YAML workflows. |
-| `codex_full_permissions` | `true` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` by default. |
+| `codex_full_permissions` | `false` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` by default when enabled. |
 | `max_log_lines` | `80` | Limit log samples in generated context and helper output. |
+| `safe_edit_backup_retention_days` | `30` | Remove backup files older than this many days. |
 | `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
 | `persistent_pip_packages` | `[]` | Python packages to install on every startup. |
 
@@ -332,11 +336,14 @@ This add-on is powerful. Codex can read mapped Home Assistant configuration file
 Recommended safety defaults:
 
 ```yaml
-readonly_mode: false
+readonly_mode: true
 require_backup_before_edit: true
 enable_device_control: false
 enable_yaml_editing: true
 mcp_mode: "ha-mcp"
+codex_full_permissions: false
+context_detail_level: "summary"
+include_addon_logs: false
 ```
 
 Set this for a more conservative setup:

@@ -51,6 +51,10 @@ show_safety() {
     echo "- enable_device_control: $(option enable_device_control false)"
     echo "- enable_file_tools: $(option enable_file_tools true)"
     echo "- enable_yaml_editing: $(option enable_yaml_editing true)"
+    echo "- codex_full_permissions: $(option codex_full_permissions false)"
+    echo "- context_detail_level: $(option context_detail_level standard)"
+    echo "- include_addon_logs: $(option include_addon_logs false)"
+    echo "- safe_edit_backup_retention_days: $(option safe_edit_backup_retention_days 30)"
     echo "- max_log_lines: $(option max_log_lines 80)"
     echo "- ha_context_refresh_minutes: $(option ha_context_refresh_minutes 30)"
 }
@@ -103,6 +107,14 @@ doctor() {
 
     echo ""
     show_safety
+
+    if [ "$(option codex_full_permissions false)" = "true" ]; then
+        echo "WARN: codex_full_permissions is enabled; Codex runs without approvals/sandbox"
+    fi
+
+    if [ "$(option readonly_mode false)" = "true" ] && [ "$(option enable_ha_mcp true)" = "true" ] && [ "$(option mcp_mode ha-mcp)" != "disabled" ]; then
+        echo "INFO: MCP registration is skipped while readonly_mode is true"
+    fi
 
     echo ""
     if [ "$failed" -eq 0 ]; then

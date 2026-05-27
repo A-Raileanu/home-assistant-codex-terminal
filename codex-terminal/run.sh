@@ -2,6 +2,7 @@
 
 set -e
 set -o pipefail
+STARTUP_STATUS_FILE="/data/startup-status.log"
 
 init_environment() {
     local data_home="/data/home"
@@ -40,9 +41,13 @@ init_environment() {
     export CODEX_HA_ENABLE_DEVICE_CONTROL="$(bashio::config "enable_device_control" "false")"
     export CODEX_HA_ENABLE_FILE_TOOLS="$(bashio::config "enable_file_tools" "true")"
     export CODEX_HA_ENABLE_YAML_EDITING="$(bashio::config "enable_yaml_editing" "true")"
-    export CODEX_HA_FULL_PERMISSIONS="$(bashio::config "codex_full_permissions" "true")"
+    export CODEX_HA_FULL_PERMISSIONS="$(bashio::config "codex_full_permissions" "false")"
     export MAX_LOG_LINES="$(bashio::config "max_log_lines" "80")"
     export HA_CONTEXT_REFRESH_MINUTES="$(bashio::config "ha_context_refresh_minutes" "30")"
+    export CONTEXT_DETAIL_LEVEL="$(bashio::config "context_detail_level" "standard")"
+    export INCLUDE_ADDON_LOGS="$(bashio::config "include_addon_logs" "false")"
+    export HA_MCP_VERSION="$(bashio::config "ha_mcp_version" "3.5.1")"
+    export SAFE_EDIT_BACKUP_RETENTION_DAYS="$(bashio::config "safe_edit_backup_retention_days" "30")"
 
     migrate_legacy_codex_files "$codex_home"
     install_tmux_config
@@ -100,14 +105,35 @@ install_runtime_helpers() {
 }
 
 install_bundled_skills() {
+    local skills_dir version_file addon_version existing_version skill_path skill_name
+
     if [ ! -d /opt/skills ]; then
         bashio::log.info "No bundled Codex skills found"
         return 0
     fi
 
-    bashio::log.info "Installing bundled Codex skills..."
-    mkdir -p "${CODEX_HOME}/skills"
-    cp -a /opt/skills/. "${CODEX_HOME}/skills/"
+    skills_dir="${CODEX_HOME}/skills"
+    version_file="${skills_dir}/.addon-version"
+    addon_version="$(cat /opt/scripts/addon-version 2>/dev/null || echo "unknown")"
+    existing_version="$(cat "$version_file" 2>/dev/null || echo "")"
+
+    mkdir -p "$skills_dir"
+
+    if [ "$existing_version" = "$addon_version" ]; then
+        bashio::log.info "Bundled skills already synced for add-on version ${addon_version}"
+        return 0
+    fi
+
+    bashio::log.info "Syncing bundled Codex skills (preserving user overrides)..."
+    for skill_path in /opt/skills/*; do
+        [ -e "$skill_path" ] || continue
+        skill_name="$(basename "$skill_path")"
+        if [ ! -e "${skills_dir}/${skill_name}" ]; then
+            cp -a "$skill_path" "${skills_dir}/${skill_name}"
+            bashio::log.info "Installed bundled skill: ${skill_name}"
+        fi
+    done
+    echo "$addon_version" > "$version_file"
 }
 
 install_persistent_packages() {
@@ -186,6 +212,24 @@ setup_ha_mcp() {
     fi
 }
 
+run_background_initialization() {
+    : > "$STARTUP_STATUS_FILE"
+    chmod 600 "$STARTUP_STATUS_FILE"
+
+    (
+        {
+            echo "Starting background initialization..."
+            run_health_check
+            install_persistent_packages
+            install_bundled_skills
+            generate_ha_context
+            validate_codex_skills
+            setup_ha_mcp
+            echo "Background initialization completed"
+        } >> "$STARTUP_STATUS_FILE" 2>&1
+    ) &
+}
+
 get_codex_launch_command() {
     local auto_launch_codex
     local codex_base_command="codex --cd /config"
@@ -239,12 +283,7 @@ main() {
     bashio::log.info "Initializing Codex Terminal add-on..."
     init_environment
     install_runtime_helpers
-    run_health_check
-    install_persistent_packages
-    install_bundled_skills
-    generate_ha_context
-    validate_codex_skills
-    setup_ha_mcp
+    run_background_initialization
     start_web_terminal
 }
 
