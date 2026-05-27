@@ -40,6 +40,7 @@ init_environment() {
     export CODEX_HA_ENABLE_DEVICE_CONTROL="$(bashio::config "enable_device_control" "false")"
     export CODEX_HA_ENABLE_FILE_TOOLS="$(bashio::config "enable_file_tools" "true")"
     export CODEX_HA_ENABLE_YAML_EDITING="$(bashio::config "enable_yaml_editing" "true")"
+    export CODEX_HA_FULL_PERMISSIONS="$(bashio::config "codex_full_permissions" "true")"
     export MAX_LOG_LINES="$(bashio::config "max_log_lines" "80")"
     export HA_CONTEXT_REFRESH_MINUTES="$(bashio::config "ha_context_refresh_minutes" "30")"
 
@@ -187,18 +188,18 @@ setup_ha_mcp() {
 
 get_codex_launch_command() {
     local auto_launch_codex
-    local welcome_prefix=""
+    local codex_base_command="codex --cd /config"
 
     auto_launch_codex="$(bashio::config "auto_launch_codex" "true")"
 
-    if command -v welcome >/dev/null 2>&1; then
-        welcome_prefix="welcome; "
+    if [ "${CODEX_HA_FULL_PERMISSIONS}" = "true" ]; then
+        codex_base_command="codex --dangerously-bypass-approvals-and-sandbox --cd /config"
     fi
 
     if [ "$auto_launch_codex" = "true" ]; then
-        echo "${welcome_prefix}tmux new-session -A -s codex 'codex --cd /config'"
+        echo "tmux new-session -A -s codex '${codex_base_command}'"
     else
-        echo "${welcome_prefix}codex-session-picker"
+        echo "codex-session-picker"
     fi
 }
 
