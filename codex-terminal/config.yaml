@@ -35,6 +35,7 @@ options:
   enable_device_control: false
   enable_file_tools: true
   enable_yaml_editing: true
+  codex_full_permissions: true
   max_log_lines: 80
   persistent_apk_packages: []
   persistent_pip_packages: []
@@ -50,6 +51,7 @@ schema:
   enable_device_control: bool?
   enable_file_tools: bool?
   enable_yaml_editing: bool?
+  codex_full_permissions: bool?
   max_log_lines: int?
   persistent_apk_packages:
     - str

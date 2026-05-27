@@ -209,6 +209,7 @@ mcp_mode: "disabled"
 | `enable_device_control` | `false` | Safety marker for direct device-control workflows. |
 | `enable_file_tools` | `true` | Allow file helper workflows. |
 | `enable_yaml_editing` | `true` | Allow `ha-safe-edit` YAML workflows. |
+| `codex_full_permissions` | `true` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` by default. |
 | `max_log_lines` | `80` | Limit log samples in generated context and helper output. |
 | `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
 | `persistent_pip_packages` | `[]` | Python packages to install on every startup. |

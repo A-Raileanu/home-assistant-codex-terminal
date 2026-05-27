@@ -28,6 +28,8 @@ metadata:
 
 **Core principle:** Use native Home Assistant constructs wherever possible. Templates bypass validation, fail silently at runtime, and make debugging opaque.
 
+**Backup rule:** Store all backup files under `/data/safe-edit-backups` (or its subfolders). Never place backup files next to source files under `/config`.
+
 ## Decision Workflow
 
 Follow this sequence when creating any automation:

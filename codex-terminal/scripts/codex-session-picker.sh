@@ -1,6 +1,11 @@
 #!/bin/bash
 
 TMUX_SESSION_NAME="codex"
+CODEX_BASE_COMMAND="codex --cd /config"
+
+if [ "${CODEX_HA_FULL_PERMISSIONS:-true}" = "true" ]; then
+    CODEX_BASE_COMMAND="codex --dangerously-bypass-approvals-and-sandbox --cd /config"
+fi
 
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -70,15 +75,15 @@ main() {
                 ;;
             1)
                 replace_session
-                exec tmux new-session -s "$TMUX_SESSION_NAME" 'codex --cd /config'
+                exec tmux new-session -s "$TMUX_SESSION_NAME" "$CODEX_BASE_COMMAND"
                 ;;
             2)
                 replace_session
-                exec tmux new-session -s "$TMUX_SESSION_NAME" 'codex --cd /config resume --last'
+                exec tmux new-session -s "$TMUX_SESSION_NAME" "${CODEX_BASE_COMMAND} resume --last"
                 ;;
             3)
                 replace_session
-                exec tmux new-session -s "$TMUX_SESSION_NAME" 'codex --cd /config resume'
+                exec tmux new-session -s "$TMUX_SESSION_NAME" "${CODEX_BASE_COMMAND} resume"
                 ;;
             4)
                 echo ""
