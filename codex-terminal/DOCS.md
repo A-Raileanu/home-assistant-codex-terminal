@@ -48,7 +48,6 @@ codex-ha check-config
 ha-context
 ha-context --force
 ha-safe-edit check
-health-check
 persist-install list
 ```
 

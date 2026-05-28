@@ -226,7 +226,6 @@ codex-ha logs <addon_slug>
 ha-context
 ha-context --force
 ha-safe-edit check
-health-check
 persist-install list
 ```
 
@@ -282,11 +281,10 @@ Auth should persist in `/data/.codex`. If it does not, check add-on logs for `/d
 Run:
 
 ```bash
-validate-skills
 codex-ha doctor
 ```
 
-Restart the add-on if skills were just updated.
+`codex-ha doctor` validates bundled skills as part of its checks. Restart the add-on if skills were just updated.
 
 ### Context looks stale
 

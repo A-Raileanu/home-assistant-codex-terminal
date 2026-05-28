@@ -90,10 +90,10 @@ doctor() {
     fi
 
     echo ""
-    if command -v validate-skills >/dev/null 2>&1; then
-        validate-skills || failed=1
+    if [ -x /opt/scripts/validate-skills.sh ]; then
+        /opt/scripts/validate-skills.sh || failed=1
     else
-        echo "FAIL: validate-skills command missing"
+        echo "FAIL: validate-skills script missing"
         failed=1
     fi
 
@@ -144,8 +144,7 @@ Usage: codex-ha <command>
 
 Commands:
   doctor        Check Codex, HA API, MCP, skills, and safety options
-  context       Regenerate Home Assistant context when cache is stale
-  context-force Regenerate Home Assistant context immediately
+  context       Regenerate Home Assistant context (pass --force to bypass cache)
   check-config  Run Home Assistant configuration check
   mcp           List Codex MCP servers
   safety        Print safety options
@@ -159,7 +158,6 @@ shift || true
 case "$command" in
     doctor) doctor "$@" ;;
     context) ha-context "$@" ;;
-    context-force) ha-context --force "$@" ;;
     check-config) check_config ;;
     mcp) codex mcp list ;;
     safety) show_safety ;;

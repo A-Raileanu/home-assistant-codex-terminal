@@ -91,10 +91,7 @@ install_runtime_helpers() {
         codex-ha \
         ha-context \
         ha-safe-edit \
-        health-check \
-        persist-install \
-        validate-skills \
-        welcome; do
+        persist-install; do
         if [ -f "/opt/scripts/${helper}.sh" ]; then
             cp "/opt/scripts/${helper}.sh" "/usr/local/bin/${helper}"
             chmod +x "/usr/local/bin/${helper}"
@@ -188,9 +185,9 @@ install_persistent_packages() {
 }
 
 validate_codex_skills() {
-    if command -v validate-skills >/dev/null 2>&1; then
+    if [ -x /opt/scripts/validate-skills.sh ]; then
         bashio::log.info "Validating Codex skills..."
-        validate-skills "${CODEX_HOME}/skills" 2>&1 | while IFS= read -r line; do
+        /opt/scripts/validate-skills.sh "${CODEX_HOME}/skills" 2>&1 | while IFS= read -r line; do
             bashio::log.info "$line"
         done || bashio::log.warning "One or more Codex skills failed validation"
     fi
@@ -231,7 +228,6 @@ run_background_initialization() {
     (
         {
             echo "Starting background initialization..."
-            run_health_check
             install_persistent_packages
             install_bundled_skills
             generate_ha_context
@@ -282,13 +278,6 @@ start_web_terminal() {
         --client-option "theme=${ttyd_theme}" \
         --client-option fontSize=14 \
         bash -lc "$launch_command"
-}
-
-run_health_check() {
-    if command -v health-check >/dev/null 2>&1; then
-        bashio::log.info "Running health check..."
-        health-check || bashio::log.warning "Health check reported warnings"
-    fi
 }
 
 main() {

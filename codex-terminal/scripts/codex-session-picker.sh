@@ -8,8 +8,6 @@ if [ "${CODEX_HA_FULL_PERMISSIONS:-false}" = "true" ]; then
 fi
 
 CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-WHITE='\033[1;37m'
 DIM='\033[2m'
 NC='\033[0m'
 
@@ -34,10 +32,7 @@ show_menu() {
     echo "  1) New interactive session"
     echo "  2) Resume most recent conversation"
     echo "  3) Resume from conversation list"
-    echo "  4) Custom Codex command"
-    echo "  5) Login"
-    echo "  6) Bash shell"
-    echo "  7) Exit"
+    echo "  4) Exit"
     echo ""
 }
 
@@ -49,7 +44,7 @@ get_choice() {
         default="0"
     fi
 
-    printf "Enter choice [0-7] (default: %s): " "$default" >&2
+    printf "Enter choice [0-4] (default: %s): " "$default" >&2
     read -r choice
     [ -n "$choice" ] || choice="$default"
     echo "$choice" | tr -d '[:space:]'
@@ -86,21 +81,6 @@ main() {
                 exec tmux new-session -s "$TMUX_SESSION_NAME" "${CODEX_BASE_COMMAND} resume"
                 ;;
             4)
-                echo ""
-                echo "Enter additional arguments (appended to default launch command):"
-                printf "> "
-                read -r custom_args
-                replace_session
-                exec tmux new-session -s "$TMUX_SESSION_NAME" "${CODEX_BASE_COMMAND} ${custom_args}"
-                ;;
-            5)
-                exec codex login
-                ;;
-            6)
-                echo -e "${GREEN}Starting bash. Run 'codex --cd /config' to start Codex.${NC}"
-                exec bash
-                ;;
-            7)
                 exit 0
                 ;;
             *)

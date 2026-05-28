@@ -102,6 +102,6 @@ persist-install list
 ## Troubleshooting
 
 - Check add-on logs if the terminal does not load.
-- Run `health-check` in the terminal to verify required commands.
+- Run `codex-ha doctor` to verify required commands, the HA API, MCP servers, skills, and safety options.
 - Run `ha-context` to verify Supervisor API access.
 - Disable `enable_ha_mcp` if MCP setup fails and you only need the terminal.
