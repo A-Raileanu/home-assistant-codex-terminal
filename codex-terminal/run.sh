@@ -105,7 +105,7 @@ install_runtime_helpers() {
 }
 
 install_bundled_skills() {
-    local skills_dir version_file addon_version existing_version skill_path skill_name
+    local skills_dir version_file addon_version existing_version skill_path skill_name target bundled_count target_entry_count target_skill_md
 
     if [ ! -d /opt/skills ]; then
         bashio::log.info "No bundled Codex skills found"
@@ -128,8 +128,20 @@ install_bundled_skills() {
     for skill_path in /opt/skills/*; do
         [ -e "$skill_path" ] || continue
         skill_name="$(basename "$skill_path")"
-        if [ ! -e "${skills_dir}/${skill_name}" ]; then
-            cp -a "$skill_path" "${skills_dir}/${skill_name}"
+        target="${skills_dir}/${skill_name}"
+
+        if [ -d "$skill_path" ] && [ -d "$target" ]; then
+            bundled_count="$(find "$skill_path" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')"
+            target_entry_count="$(find "$target" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')"
+            target_skill_md="${target}/SKILL.md"
+            if [ "$bundled_count" -gt 1 ] && [ "$target_entry_count" = "1" ] && [ -f "$target_skill_md" ]; then
+                bashio::log.info "Replacing legacy auto-generated skill: ${skill_name}"
+                rm -rf "$target"
+            fi
+        fi
+
+        if [ ! -e "$target" ]; then
+            cp -a "$skill_path" "$target"
             bashio::log.info "Installed bundled skill: ${skill_name}"
         fi
     done

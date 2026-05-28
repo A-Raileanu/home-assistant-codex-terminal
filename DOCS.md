@@ -48,8 +48,11 @@ ha-context --force
 It writes:
 
 - `$CODEX_HOME/AGENTS.md`
-- `$CODEX_HOME/skills/home-assistant/SKILL.md`
-- bundled skills including `home-assistant-best-practices`, automation, dashboard, template, refactor, add-on, and troubleshooting helpers
+- `$CODEX_HOME/skills/home-assistant-instance/SKILL.md` — per-installation runtime config and safety flags
+
+Bundled separately by the add-on (synced from `/opt/skills` on version change):
+
+- `$CODEX_HOME/skills/home-assistant/SKILL.md` — umbrella index with a routing table, plus topic-focused references (`ha-entities.md`, `ha-devices-areas.md`, `ha-automations.md`, `ha-scripts-steps.md`, `ha-helpers-scenes.md`, `ha-dashboards.md`, `ha-templates.md`, `ha-notifications.md`, `ha-device-control.md`, `ha-refactoring.md`, `ha-examples.md`) and the persistent `inventory.yaml`.
 
 The context includes Home Assistant version, installed add-ons, entity counts, recent errors, and useful API examples.
 

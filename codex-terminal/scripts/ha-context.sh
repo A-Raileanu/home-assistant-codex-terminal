@@ -4,7 +4,7 @@ set -e
 
 SUPERVISOR_URL="http://supervisor"
 OUTPUT_FILE="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
-SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/home-assistant"
+SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/home-assistant-instance"
 MAX_LOG_LINES="${MAX_LOG_LINES:-80}"
 REFRESH_MINUTES="${HA_CONTEXT_REFRESH_MINUTES:-30}"
 OPTIONS_FILE="/data/options.json"
@@ -357,11 +357,11 @@ write_skill() {
     mkdir -p "$SKILL_DIR"
     skill_template="$(cat <<'SKILL'
 ---
-name: home-assistant
-description: "Use when working on this Home Assistant machine: configuration YAML, automations, scripts, dashboards, add-ons, Supervisor/Core APIs, logs, entities, and troubleshooting."
+name: home-assistant-instance
+description: "Per-installation runtime configuration and safety flags for this Home Assistant instance: paths, readonly mode, device control, backup policy."
 ---
 
-# Home Assistant
+# Home Assistant Instance
 
 You are running inside a Home Assistant add-on container.
 
@@ -408,15 +408,9 @@ curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/info
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/api/states
 ```
 
-## Included Skills
+## Related Skills
 
-- `home-assistant-best-practices`
-- `ha-automation-author`
-- `ha-dashboard-author`
-- `ha-template-debugger`
-- `ha-safe-refactor`
-- `ha-add-on-developer`
-- `ha-troubleshooter`
+See the bundled `home-assistant` skill (`$CODEX_HOME/skills/home-assistant/SKILL.md`) for the topic-focused routing table covering entities, devices/areas, automations, scripts, helpers/scenes, dashboards, templates, notifications, device control, refactoring, and examples.
 SKILL
 )"
     skill_template="${skill_template//__READONLY_MODE__/${readonly_mode}}"
@@ -511,7 +505,7 @@ main() {
 
     generate_agents_md
     echo "Home Assistant context written to ${OUTPUT_FILE}" >&2
-    echo "Home Assistant skill written to ${SKILL_DIR}/SKILL.md" >&2
+    echo "Home Assistant instance skill written to ${SKILL_DIR}/SKILL.md" >&2
 }
 
 main "$@"

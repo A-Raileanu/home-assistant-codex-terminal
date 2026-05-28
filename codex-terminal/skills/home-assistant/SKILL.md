@@ -1,5 +1,5 @@
 ---
-name: homeassistant
+name: home-assistant
 description: Index principal Home Assistant Skills. Citește acest fișier întâi pentru a determina ce fișier specific să folosești.
 ---
 
