@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.5
+
+### UX
+
+- Replace `codex-session-picker` with a new `codex-task-picker` shown at every fresh terminal open. Existing `tmux` session is auto-attached transparently; otherwise the user sees a 4-option menu and can choose:
+  1. **Sesiune nouă** (default) — plain Codex launch without a preset prompt.
+  2. Redenumește device-urile și entitățile conform convenției — sare peste ce respectă deja convenția.
+  3. Ajustează automatizările conform convențiilor — alias, mode, description, trigger IDs.
+  4. Repară automatizările și dashboard-urile cu entități declarate greșit.
+- Options 2–4 launch Codex with a pre-filled initial prompt (passed as positional argument to `codex --cd /config`), so the requested workflow starts immediately without the user having to type it.
+- Picker preset prompts explicitly tell Codex to ignore items already following the convention, so re-running them is idempotent.
+- `auto_launch_codex: false` now drops the user directly into `bash -l` instead of the old session picker (which was redundant with Codex's built-in `/new` and `/resume`).
+- Task picker UI is now interactive and themed: ANSI 256-color cyan accent, bold highlighted selection with arrow indicator, live status line (full permissions state · current tmux session), `↑`/`↓` arrow navigation with smooth `cursor-home + clear` redraw, numeric shortcuts `1`–`4` for instant jump, `Q` or `Esc` to exit. Banner shows current add-on version and Codex CLI version.
+
 ## 1.0.4
 
 ### Skills

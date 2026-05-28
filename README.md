@@ -85,11 +85,30 @@ codex login
 
 Urmează instrucțiunile (cont OpenAI sau API key). Auth-ul se salvează în `/data/.codex` și persistă peste restart-uri și update-uri.
 
-Apoi, dacă `auto_launch_codex: true` (default), Codex pornește automat în `/config` la fiecare deschidere a sidebar-ului. Altfel, lansează manual:
+### Task picker la fiecare deschidere
 
-```bash
-codex --cd /config
+Cu `auto_launch_codex: true` (default), la fiecare deschidere de sidebar Codex Terminal afișează un picker scurt cu sarcini comune:
+
+```text
+  Ce vrei să faci?
+
+  1) Sesiune nouă (Codex pornit fără prompt prestabilit)
+  2) Redenumește device-urile și entitățile conform convenției
+     (ignoră ce respectă deja convenția)
+  3) Ajustează automatizările conform convențiilor
+     (alias, mode, description, trigger IDs — ignoră ce e deja OK)
+  4) Repară automatizările și dashboard-urile cu entități declarate greșit
+     (entity_id-uri inexistente, referințe moarte, integrări vechi)
+
+  Apasă [1-4] (default: 1):
 ```
+
+- **Opțiunea 1** lansează Codex normal, fără mesaj inițial — alege asta pentru conversații libere.
+- **Opțiunile 2–4** pornesc Codex cu un prompt pre-completat care declanșează direct workflow-ul (citește skill-urile relevante, aplică convențiile, folosește `ha-safe-edit`, raportează ce a schimbat).
+- Toate trei sunt **idempotente** — sare peste ce respectă deja convenția, deci poți rula opțiunea 2 lunar fără să strice nimic.
+- Dacă există deja o sesiune `tmux` activă (ai închis sidebar-ul și revii), picker-ul e sărit și ești reconectat automat la sesiunea existentă.
+
+Pentru a sări complet peste picker și a primi shell-ul direct, setează `auto_launch_codex: false` în opțiunile add-on-ului. Vei intra în `bash`; pornește manual Codex cu `codex --cd /config`.
 
 ## Comenzi utile
 
@@ -365,7 +384,7 @@ mcp_mode: "disabled"
 
 | Opțiune                          | Default                              | Descriere                                                                                                                                       |
 | -------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auto_launch_codex`              | `true`                               | Pornește Codex automat la deschiderea terminalului.                                                                                             |
+| `auto_launch_codex`              | `true`                               | `true` — afișează task picker-ul la fiecare deschidere de sidebar (sau atașează sesiunea `tmux` existentă). `false` — sare peste picker, dropă direct în `bash -l`. |
 | `ha_smart_context`               | `true`                               | Generează contextul HA și skill-ul instance la start.                                                                                           |
 | `ha_context_refresh_minutes`     | `30`                                 | Sare peste regenerarea contextului dacă cache-ul e mai recent decât această valoare.                                                            |
 | `context_detail_level`           | `standard`                           | Nivelul contextului: `summary`, `standard` sau `full`.                                                                                          |
@@ -537,7 +556,7 @@ codex-terminal/
   DOCS.md                                        # documentație internă add-on
   scripts/
     codex-ha.sh                                  # diagnostic: doctor / safety / check-config / logs
-    codex-session-picker.sh                      # alegere sesiune când auto_launch_codex e false
+    codex-task-picker.sh                         # task picker afișat la deschiderea sidebar-ului
     ha-context.sh                                # generator AGENTS.md + skill home-assistant-instance
     ha-safe-edit.sh                              # backup + validare YAML/check_config
     persist-install.sh                           # pachete APK/pip persistente

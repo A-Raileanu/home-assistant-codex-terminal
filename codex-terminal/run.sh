@@ -87,7 +87,7 @@ install_runtime_helpers() {
     local helper
 
     for helper in \
-        codex-session-picker \
+        codex-task-picker \
         codex-ha \
         ha-context \
         ha-safe-edit \
@@ -230,19 +230,14 @@ run_background_initialization() {
 
 get_codex_launch_command() {
     local auto_launch_codex
-    local codex_base_command="codex --cd /config"
-
     auto_launch_codex="$(bashio::config "auto_launch_codex" "true")"
 
-    if [ "${CODEX_HA_FULL_PERMISSIONS}" = "true" ]; then
-        codex_base_command="codex --dangerously-bypass-approvals-and-sandbox --cd /config"
+    if [ "$auto_launch_codex" != "true" ]; then
+        echo "bash -l"
+        return
     fi
 
-    if [ "$auto_launch_codex" = "true" ]; then
-        echo "tmux new-session -A -s codex '${codex_base_command}'"
-    else
-        echo "codex-session-picker"
-    fi
+    echo "codex-task-picker"
 }
 
 start_web_terminal() {
