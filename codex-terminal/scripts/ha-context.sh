@@ -7,8 +7,21 @@ OUTPUT_FILE="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/home-assistant"
 MAX_LOG_LINES="${MAX_LOG_LINES:-80}"
 REFRESH_MINUTES="${HA_CONTEXT_REFRESH_MINUTES:-30}"
+OPTIONS_FILE="/data/options.json"
+CONTEXT_DETAIL_LEVEL="${CONTEXT_DETAIL_LEVEL:-standard}"
+INCLUDE_ADDON_LOGS="${INCLUDE_ADDON_LOGS:-false}"
 FULL_MODE=false
 FORCE_REFRESH=false
+
+option() {
+    local key="$1"
+    local default="$2"
+    if [ -f "$OPTIONS_FILE" ]; then
+        jq -r --arg key "$key" --arg default "$default" '.[$key] // $default' "$OPTIONS_FILE" 2>/dev/null || echo "$default"
+    else
+        echo "$default"
+    fi
+}
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -63,6 +76,32 @@ check_prerequisites() {
             exit 1
         fi
     done
+}
+
+context_level() {
+    local level
+    level="$CONTEXT_DETAIL_LEVEL"
+    if [ "$FULL_MODE" = true ]; then
+        level="full"
+    fi
+    echo "$level"
+}
+
+is_summary_mode() {
+    [ "$(context_level)" = "summary" ]
+}
+
+include_addon_logs() {
+    local enabled="$INCLUDE_ADDON_LOGS"
+    [ "$(context_level)" = "full" ] && return 0
+    [ "$enabled" = "true" ]
+}
+
+redact_sensitive() {
+    python3 -c 'import re,sys; d=sys.stdin.read(); p=[(r"(?i)(authorization:\s*bearer\s+)[^\s]+",r"\1[REDACTED]"),(r"(?i)(token(?:=|:)\s*)[A-Za-z0-9._\-]+",r"\1[REDACTED]"),(r"(?i)(api[_-]?key(?:=|:)\s*)[A-Za-z0-9._\-]+",r"\1[REDACTED]"),(r"(?i)(password(?:=|:)\s*)\S+",r"\1[REDACTED]"),(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}","[REDACTED_EMAIL]")];
+for rx,rep in p:
+    d=re.sub(rx,rep,d)
+print(d,end="")'
 }
 
 context_is_fresh() {
@@ -142,7 +181,7 @@ section_entity_summary() {
     echo ""
     echo "Total: ${total} entities"
 
-    if [ "$FULL_MODE" = true ]; then
+    if [ "$(context_level)" = "full" ]; then
         echo ""
         echo "### Entity Details"
         echo "$states" | jq -r '
@@ -179,7 +218,7 @@ section_recent_errors() {
     fi
 
     echo '```text'
-    echo "$error_log" | tail -20 | cut -c1-200
+    echo "$error_log" | tail -20 | cut -c1-200 | redact_sensitive
     echo '```'
 }
 
@@ -213,6 +252,11 @@ section_automation_inventory() {
         return
     fi
 
+    if is_summary_mode; then
+        echo "Summary mode enabled; skipping automation/script/scene inventory."
+        return
+    fi
+
     echo "$states" | jq -r '
         map(select(.entity_id | test("^(automation|script|scene)\\."))) |
         group_by(.entity_id | split(".")[0])[] |
@@ -227,6 +271,11 @@ section_unavailable_entities() {
 
     if [ -z "$states" ] || ! echo "$states" | jq -e '.' >/dev/null 2>&1; then
         echo "Unable to retrieve entity states."
+        return
+    fi
+
+    if is_summary_mode; then
+        echo "Summary mode enabled; skipping unavailable/unknown entity details."
         return
     fi
 
@@ -274,6 +323,11 @@ section_recorder() {
 }
 
 section_addon_logs() {
+    if ! include_addon_logs; then
+        echo "Add-on log sampling disabled."
+        return
+    fi
+
     local addons_data
     addons_data="$(api_call "addons")"
 
@@ -286,15 +340,22 @@ section_addon_logs() {
         [ -n "$slug" ] || continue
         echo "### ${slug}"
         echo '```text'
-        api_call "addons/${slug}/logs" | tail -"${MAX_LOG_LINES}" | cut -c1-220
+        api_call "addons/${slug}/logs" | tail -"${MAX_LOG_LINES}" | cut -c1-220 | redact_sensitive
         echo '```'
         echo ""
     done
 }
 
 write_skill() {
+    local readonly_mode enable_device_control require_backup codex_full_permissions
+    local skill_template
+    readonly_mode="$(option readonly_mode false)"
+    enable_device_control="$(option enable_device_control false)"
+    require_backup="$(option require_backup_before_edit true)"
+    codex_full_permissions="$(option codex_full_permissions false)"
+
     mkdir -p "$SKILL_DIR"
-    cat > "$SKILL_DIR/SKILL.md" <<'SKILL'
+    skill_template="$(cat <<'SKILL'
 ---
 name: home-assistant
 description: "Use when working on this Home Assistant machine: configuration YAML, automations, scripts, dashboards, add-ons, Supervisor/Core APIs, logs, entities, and troubleshooting."
@@ -321,6 +382,10 @@ You are running inside a Home Assistant add-on container.
 - Always store backups under `/data/safe-edit-backups` (or a subfolder inside it).
 - Do not write backup files next to source files in `/config` (no inline `.bak` files).
 - Keep backup paths in your final response.
+- `readonly_mode`: __READONLY_MODE__
+- `enable_device_control`: __ENABLE_DEVICE_CONTROL__
+- `require_backup_before_edit`: __REQUIRE_BACKUP__
+- `codex_full_permissions`: __CODEX_FULL_PERMISSIONS__
 - Treat device control as opt-in. Avoid service calls unless the user explicitly requested them.
 - Explain device-control side effects before issuing service calls.
 - Never edit `.storage/` directly unless the user explicitly accepts the risk and no API path exists.
@@ -353,6 +418,12 @@ curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/api/sta
 - `ha-add-on-developer`
 - `ha-troubleshooter`
 SKILL
+)"
+    skill_template="${skill_template//__READONLY_MODE__/${readonly_mode}}"
+    skill_template="${skill_template//__ENABLE_DEVICE_CONTROL__/${enable_device_control}}"
+    skill_template="${skill_template//__REQUIRE_BACKUP__/${require_backup}}"
+    skill_template="${skill_template//__CODEX_FULL_PERMISSIONS__/${codex_full_permissions}}"
+    printf "%s\n" "$skill_template" > "$SKILL_DIR/SKILL.md"
 }
 
 generate_agents_md() {
@@ -416,12 +487,20 @@ generate_agents_md() {
         echo '```'
     } > "$tmp_file"
 
-    chmod 644 "$tmp_file"
+    chmod 600 "$tmp_file"
     mv "$tmp_file" "$OUTPUT_FILE"
 }
 
 main() {
     check_prerequisites
+    CONTEXT_DETAIL_LEVEL="$(option context_detail_level "$CONTEXT_DETAIL_LEVEL")"
+    INCLUDE_ADDON_LOGS="$(option include_addon_logs "$INCLUDE_ADDON_LOGS")"
+
+    case "$CONTEXT_DETAIL_LEVEL" in
+        summary|standard|full) ;;
+        *) CONTEXT_DETAIL_LEVEL="standard" ;;
+    esac
+
     write_skill
 
     if context_is_fresh "$OUTPUT_FILE" "$REFRESH_MINUTES"; then

@@ -3,7 +3,7 @@
 TMUX_SESSION_NAME="codex"
 CODEX_BASE_COMMAND="codex --cd /config"
 
-if [ "${CODEX_HA_FULL_PERMISSIONS:-true}" = "true" ]; then
+if [ "${CODEX_HA_FULL_PERMISSIONS:-false}" = "true" ]; then
     CODEX_BASE_COMMAND="codex --dangerously-bypass-approvals-and-sandbox --cd /config"
 fi
 
@@ -87,11 +87,11 @@ main() {
                 ;;
             4)
                 echo ""
-                echo "Enter arguments after 'codex':"
-                printf "> codex "
+                echo "Enter additional arguments (appended to default launch command):"
+                printf "> "
                 read -r custom_args
                 replace_session
-                exec tmux new-session -s "$TMUX_SESSION_NAME" "codex ${custom_args}"
+                exec tmux new-session -s "$TMUX_SESSION_NAME" "${CODEX_BASE_COMMAND} ${custom_args}"
                 ;;
             5)
                 exec codex login

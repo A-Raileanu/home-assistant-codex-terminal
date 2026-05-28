@@ -37,6 +37,9 @@ jobs:
           - arch: aarch64
             platform: linux/arm64
             build_from: ghcr.io/home-assistant/aarch64-base:3.21
+          - arch: armv7
+            platform: linux/arm/v7
+            build_from: ghcr.io/home-assistant/armv7-base:3.21
     steps:
       - uses: actions/checkout@v4
 
@@ -87,4 +90,13 @@ jobs:
               fi
               echo "OK: $bin"
             done
+          '
+
+      - name: Smoke test - validate bundled skills
+        if: matrix.arch == 'amd64'
+        run: |
+          docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c '
+            mkdir -p /tmp/test-skills
+            cp -a /opt/skills/. /tmp/test-skills/
+            /opt/scripts/validate-skills.sh /tmp/test-skills
           '

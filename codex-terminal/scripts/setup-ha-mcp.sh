@@ -6,9 +6,15 @@ configure_ha_mcp_server() {
     local enable_ha_mcp
     local mcp_mode
     local official_mcp_url
+    local readonly_mode
+    local enable_device_control
+    local ha_mcp_version
     enable_ha_mcp="$(bashio::config "enable_ha_mcp" "true")"
     mcp_mode="$(bashio::config "mcp_mode" "ha-mcp")"
     official_mcp_url="$(bashio::config "official_mcp_url" "http://supervisor/core/api/mcp")"
+    readonly_mode="$(bashio::config "readonly_mode" "false")"
+    enable_device_control="$(bashio::config "enable_device_control" "false")"
+    ha_mcp_version="$(bashio::config "ha_mcp_version" "3.5.1")"
 
     if [ "$enable_ha_mcp" != "true" ]; then
         bashio::log.info "Home Assistant MCP integration disabled"
@@ -17,6 +23,16 @@ configure_ha_mcp_server() {
 
     if [ "$mcp_mode" = "disabled" ]; then
         bashio::log.info "MCP mode is disabled"
+        return 0
+    fi
+
+    if [ "$readonly_mode" = "true" ]; then
+        bashio::log.info "readonly_mode is enabled; skipping MCP registration"
+        return 0
+    fi
+
+    if [ "$enable_device_control" != "true" ]; then
+        bashio::log.info "enable_device_control is false; skipping MCP registration"
         return 0
     fi
 
@@ -42,7 +58,7 @@ configure_ha_mcp_server() {
             if codex mcp add home-assistant \
                 --env "HOMEASSISTANT_URL=http://supervisor/core" \
                 --env "HOMEASSISTANT_TOKEN=${SUPERVISOR_TOKEN}" \
-                -- uvx --index-strategy unsafe-best-match ha-mcp@3.5.1; then
+                -- uvx --index-strategy unsafe-best-match "ha-mcp@${ha_mcp_version}"; then
                 bashio::log.info "ha-mcp server configured"
             else
                 bashio::log.warning "Failed to configure ha-mcp server"
