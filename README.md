@@ -120,6 +120,167 @@ websocat ws://supervisor/core/api/websocket
 
 `websocat` poate vorbi cu Home Assistant Core WebSocket API la `ws://supervisor/core/api/websocket`. Autentifică-te trimițând `{"type": "auth", "access_token": "$SUPERVISOR_TOKEN"}` ca primul mesaj JSON imediat după ce conexiunea se deschide.
 
+## Cum redenumești device-uri, entități și ajustezi automatizările
+
+Skill-urile bundlate (`home-assistant/SKILL.md` + topic files) definesc convenții stricte de denumire. **Când îi ceri lui Codex să redenumească ceva, aplică automat aceste reguli** — nu trebuie să i le repeți. Conversația cu Codex se desfășoară în română.
+
+### Convențiile pe scurt
+
+| Element                                 | Format                                | Exemple                                                                |
+| --------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------- |
+| Device                                  | `[Area] Producător Model [#N]`        | `[Living] Aqara T1`, `[Dormitor #1] IKEA TRÅDFRI E27`                  |
+| Entitate (`friendly_name`)              | `[Area] Nume dispozitiv - Funcție`    | `[Living] Aqara T1 - Temperatură`, `[Server] Synology DS920+ - Procent CPU` |
+| Entitate principală (un singur sensor)  | `[Area] Nume dispozitiv`              | `[Dormitor #1] IKEA TRÅDFRI E27`                                       |
+| Area                                    | slug RO scurt                         | `living`, `dormitor1`, `cameratehnica`                                 |
+| Label                                   | slug RO scurt, **transversal pe tip** | `lumina`, `senzor_miscare`, `priza_smart`                              |
+| Automatizare / script / scenă / helper  | `alias` descriptiv în română          | `"Aprinde lumina living la apus"`, `"Curăță notificările vechi"`       |
+| Limbă                                   | română peste tot, diacritice complete | `entity_id` slugs + câmpuri tehnice YAML rămân în engleză              |
+
+Detalii complete: deschide skill-urile direct (`cat $CODEX_HOME/skills/home-assistant/SKILL.md`) sau cere-i lui Codex să-ți explice o convenție anume (`Explică-mi convenția de naming pentru entități`).
+
+### Redenumire device-uri
+
+În terminalul Codex:
+
+```text
+> Redenumește toți senzorii Aqara din dormitor conform convenției.
+```
+
+Codex execută automat:
+1. Citește `inventory.yaml` ca să vadă device-urile existente, area-urile, labels și `change_log`.
+2. Citește `ha-devices-areas.md` pentru regulile de format (`[Area] Producător Model [#N]`).
+3. Propune un plan cu device-urile afectate (ex: `aqara_temperature_sensor_5b1c` → `[Dormitor #1] Aqara T1`).
+4. Aplică modificările prin Settings API (WebSocket) sau prin editare în `core.device_registry` cu backup `ha-safe-edit`.
+5. Asignează area corect și label-urile potrivite (`temperatura`, `umiditate` etc.).
+6. Actualizează `inventory.yaml` cu o intrare nouă în `change_log:` și după caz în `devices:`.
+
+Alte prompt-uri tipice:
+
+```text
+> Redenumește device-ul cu entity_id sensor.foo_temperature conform convenției.
+> Toate device-urile fără area asignată — citește inventory.yaml și asignează area corectă.
+> Verifică labels-urile pe device-urile din curte; adaugă "exterior" celor care lipsesc.
+> Găsește toate device-urile cu sufixe random (_a1b2c3) în nume și propune redenumiri.
+```
+
+### Redenumire entități (`friendly_name`)
+
+```text
+> Adaugă prefixul "[Area] Nume dispozitiv -" la toate entitățile fără el.
+```
+
+Codex execută:
+1. Listează entitățile fără prefix (interogare WebSocket la `core.entity_registry`).
+2. Pentru fiecare, deduce device-ul și area din `core.device_registry`.
+3. Construiește `friendly_name` în format `[Area] Nume dispozitiv - Funcție` (folosind vocabularul din `ha-entities.md` pentru partea de funcție: `Temperatură`, `Umiditate`, `Mișcare`, `Procent baterie`, etc.).
+4. Te întreabă cum vrei să aplice override-ul:
+   - **UI override** prin Settings API (rapid, dar invizibil în git);
+   - **`customize:`** în `configuration.yaml` (git-controlled, recomandat dacă ai versioning).
+5. Aplică modificările cu validare + backup.
+
+Alte prompt-uri:
+
+```text
+> Pe toți senzorii de temperatură, setează friendly_name conform convenției.
+> Entitatea sensor.kitchen_motion_1a2b — propune un friendly_name corect.
+> Curăță entity_id-urile cu sufixe random și redenumește-le ca slug stabil <slug_camera>_<function>.
+> Pe entitățile principale (cele fără sub-funcție), setează friendly_name = [Area] Nume dispozitiv.
+```
+
+### Ajustare automatizări (alias, mode, descriere)
+
+```text
+> Citește automations.yaml și propune redenumiri pentru toate aliasurile generice.
+```
+
+Codex execută:
+1. Parsează `/config/automations.yaml`.
+2. Identifică alias-urile generice (`"New Automation"`, `"Untitled Automation"`, slug-uri auto-generate de UI).
+3. Citește `ha-automations.md` pentru convenții (limbă, format, când să folosească `description:`, când să folosească `id:`).
+4. Propune alias-uri descriptive în română + `description:` pentru cele complexe.
+5. Verifică `mode:` — pe trigger-e motion sugerează `restart`, pe acțiuni secvențiale `queued`, pe acțiuni paralele independente `parallel`.
+6. Rulează `ha-safe-edit check` și aplică doar dacă `check_config` trece.
+
+Alte prompt-uri:
+
+```text
+> Adaugă description pe toate automatizările care n-au.
+> Verifică mode pe toate automatizările cu trigger.platform=state pe motion — ar trebui restart.
+> Refactorează automatizarea "Lumini seara" — împărți condițiile native în loc de template.
+> Adaugă trigger IDs (id:) pe automatizările multi-trigger ca să devină ușor de citit în acțiuni.
+> Convertește automatizarea cu wait_template într-un wait_for_trigger nativ.
+```
+
+### Scripturi cu parametri (`fields:`)
+
+```text
+> Convertește scriptul script.notification_test într-un script cu parametri (mesaj + target).
+```
+
+Codex aplică convențiile din `ha-scripts-steps.md`:
+- Definește `fields:` cu `selector:` corect (`text`, `entity`, `area`, `boolean`, `number` cu unit).
+- Adaugă `alias:` pe fiecare pas din `sequence:` ca să fie ușor de citit în trace.
+- Folosește `variables:` când reutilizezi valori în mai mulți pași.
+- Adaugă `description:` la nivel de script când e necesar.
+
+### Helpers și scene
+
+```text
+> Am nevoie de un timer pentru "ștergere notificare după 5 minute". Ce helper sugerezi?
+```
+
+Codex citește `ha-helpers-scenes.md` (matricea de selecție helper) și recomandă tipul potrivit (`timer`, `input_datetime`, `input_boolean`, `counter`, `input_number`, etc.) cu motivare scurtă.
+
+Pentru scene:
+
+```text
+> Creează o scenă "Living seara" cu lumini calde la 40% și TV pornit.
+> Refactorează scena existentă "Trezit dimineața" — momentan duplică valorile, mutăm într-un script cu parametri.
+```
+
+### Refactoring sigur
+
+Înainte de redenumiri de entități cu impact larg:
+
+```text
+> Sunt pe cale să redenumesc light.living_ceiling în light.living_lampa_tavan. Verifică impactul.
+```
+
+Codex citește `ha-refactoring.md` și caută referințele entității în:
+- Automatizări (`automations.yaml` + `.storage/automations`)
+- Scripturi, scene, helpers
+- Dashboards (UI mode + YAML mode + storage)
+- Template sensors și template binary sensors
+- Grupuri și `customize:`
+- `recorder:` include/exclude
+- Energy Dashboard
+- Voice assistants și exposed entities
+
+Apoi propune un plan de migrare în ordinea sigură (entitate nouă cu același `unique_id` → migrare referințe → cleanup).
+
+### Notificări și template-uri
+
+```text
+> Scrie o notificare care alertează când usa de la intrare e deschisă mai mult de 2 minute.
+> Refactorează template sensor pentru "consum lunar electricitate" — folosește utility_meter în loc de template.
+> Debug template — de ce {{ states('sensor.foo') | float }} întoarce 0?
+```
+
+Codex aplică conventiile din `ha-notifications.md` (`notify.send_message`, canale, Jinja2 cu fallback-uri sigure) și `ha-templates.md` (când să eviți template-urile, performanță, trigger-based templates).
+
+### Workflow-ul automat al lui Codex
+
+Pașii pe care Codex îi urmează automat la **orice** modificare tangibilă (vezi `home-assistant/SKILL.md` → "Reguli obligatorii"):
+
+1. Identifică tipul elementului atins (device / entitate / automatizare / script / scenă / helper / dashboard / template / notificare).
+2. Citește fișierul `ha-*.md` corespunzător + `inventory.yaml` dacă atinge device sau entitate.
+3. Aplică toate convențiile integral (limbă, casing, slug-uri, structură, prefix `friendly_name`, `mode`, etc.).
+4. Întreabă utilizatorul dacă o convenție pare neclară sau lipsește — **nu inventează**.
+5. Folosește `ha-safe-edit` (backup + validare) înainte de orice edit pe `/config`.
+6. La final, actualizează `inventory.yaml` cu intrare nouă în `change_log:` și după caz în `devices:`.
+
+Dacă vezi că Codex sare peste un pas (rar, dar se întâmplă în conversații lungi), spune-i direct: `Aplică convențiile din ha-entities.md` sau `Actualizează inventory.yaml`.
+
 ## Contextul Home Assistant
 
 La start, add-on-ul generează un context Home Assistant pentru Codex în `$CODEX_HOME/AGENTS.md`. Conține:
