@@ -31,7 +31,7 @@ Authentication and Codex configuration persist in `/data/.codex`.
 | `ha_mcp_version` | `3.5.1` | Version used for `ha-mcp` server registration. |
 | `readonly_mode` | `false` | Prevent helper-command edits. |
 | `enable_device_control` | `false` | Safety marker for device-control workflows. |
-| `codex_full_permissions` | `false` | Enable full bypass mode (`--dangerously-bypass-approvals-and-sandbox`) when needed. |
+| `codex_full_permissions` | `true` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` so it does not prompt for approvals. Set to `false` to re-enable per-action confirmation and the sandbox. |
 | `safe_edit_backup_retention_days` | `30` | Remove backup files older than this many days. |
 | `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
 | `persistent_pip_packages` | `[]` | Python packages to install on every startup. |

@@ -206,7 +206,7 @@ mcp_mode: "disabled"
 | `enable_device_control` | `false` | Safety marker for direct device-control workflows. |
 | `enable_file_tools` | `true` | Allow file helper workflows. |
 | `enable_yaml_editing` | `true` | Allow `ha-safe-edit` YAML workflows. |
-| `codex_full_permissions` | `false` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` by default when enabled. |
+| `codex_full_permissions` | `true` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` so it does not prompt for approvals. Set to `false` if you want per-action confirmation and the sandbox enforced. |
 | `max_log_lines` | `80` | Limit log samples in generated context and helper output. |
 | `safe_edit_backup_retention_days` | `30` | Remove backup files older than this many days. |
 | `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
@@ -325,7 +325,9 @@ Review the output before restarting Home Assistant.
 
 This add-on is powerful. Codex can read mapped Home Assistant configuration files, run terminal commands, and, when MCP is enabled, interact with Home Assistant APIs.
 
-Recommended safety defaults:
+Install defaults favour a frictionless workflow: `codex_full_permissions: true` skips per-action approval prompts and the sandbox. If you'd rather have Codex ask before each action, set `codex_full_permissions: false`.
+
+Lock-down example (opt-in, overrides the permissive defaults):
 
 ```yaml
 readonly_mode: true
@@ -338,7 +340,7 @@ context_detail_level: "summary"
 include_addon_logs: false
 ```
 
-Set this for a more conservative setup:
+For an even more restrictive setup:
 
 ```yaml
 readonly_mode: true

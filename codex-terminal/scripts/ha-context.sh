@@ -352,7 +352,7 @@ write_skill() {
     readonly_mode="$(option readonly_mode false)"
     enable_device_control="$(option enable_device_control false)"
     require_backup="$(option require_backup_before_edit true)"
-    codex_full_permissions="$(option codex_full_permissions false)"
+    codex_full_permissions="$(option codex_full_permissions true)"
 
     mkdir -p "$SKILL_DIR"
     skill_template="$(cat <<'SKILL'

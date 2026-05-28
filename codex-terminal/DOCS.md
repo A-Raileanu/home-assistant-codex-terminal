@@ -30,7 +30,7 @@ This add-on provides a web-based terminal with OpenAI Codex CLI preinstalled. It
 | `enable_device_control` | `false` | Records whether direct device-control workflows are allowed. |
 | `enable_file_tools` | `true` | Records whether file helper workflows are allowed. |
 | `enable_yaml_editing` | `true` | Allows `ha-safe-edit` YAML edit workflows. |
-| `codex_full_permissions` | `false` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` by default when enabled. |
+| `codex_full_permissions` | `true` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` so it does not prompt for approvals. Set to `false` to re-enable per-action confirmation and the sandbox. |
 | `max_log_lines` | `80` | Limits log samples in generated context and helper commands. |
 | `safe_edit_backup_retention_days` | `30` | Delete backup files older than this many days. |
 | `persistent_apk_packages` | `[]` | APK packages to install on startup. |

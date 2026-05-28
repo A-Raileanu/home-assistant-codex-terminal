@@ -51,7 +51,7 @@ show_safety() {
     echo "- enable_device_control: $(option enable_device_control false)"
     echo "- enable_file_tools: $(option enable_file_tools true)"
     echo "- enable_yaml_editing: $(option enable_yaml_editing true)"
-    echo "- codex_full_permissions: $(option codex_full_permissions false)"
+    echo "- codex_full_permissions: $(option codex_full_permissions true)"
     echo "- context_detail_level: $(option context_detail_level standard)"
     echo "- include_addon_logs: $(option include_addon_logs false)"
     echo "- safe_edit_backup_retention_days: $(option safe_edit_backup_retention_days 30)"
@@ -108,7 +108,7 @@ doctor() {
     echo ""
     show_safety
 
-    if [ "$(option codex_full_permissions false)" = "true" ]; then
+    if [ "$(option codex_full_permissions true)" = "true" ]; then
         echo "WARN: codex_full_permissions is enabled; Codex runs without approvals/sandbox"
     fi
 

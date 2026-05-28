@@ -41,7 +41,7 @@ init_environment() {
     export CODEX_HA_ENABLE_DEVICE_CONTROL="$(bashio::config "enable_device_control" "false")"
     export CODEX_HA_ENABLE_FILE_TOOLS="$(bashio::config "enable_file_tools" "true")"
     export CODEX_HA_ENABLE_YAML_EDITING="$(bashio::config "enable_yaml_editing" "true")"
-    export CODEX_HA_FULL_PERMISSIONS="$(bashio::config "codex_full_permissions" "false")"
+    export CODEX_HA_FULL_PERMISSIONS="$(bashio::config "codex_full_permissions" "true")"
     export MAX_LOG_LINES="$(bashio::config "max_log_lines" "80")"
     export HA_CONTEXT_REFRESH_MINUTES="$(bashio::config "ha_context_refresh_minutes" "30")"
     export CONTEXT_DETAIL_LEVEL="$(bashio::config "context_detail_level" "standard")"

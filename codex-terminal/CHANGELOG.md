@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+### Defaults
+
+- Flip `codex_full_permissions` default to `true`. Codex launches with `--dangerously-bypass-approvals-and-sandbox`, so it no longer prompts for approvals on every action. Set the option to `false` to restore per-action confirmation and the sandbox.
+
 ## 1.0.0
 
 ### Skills
