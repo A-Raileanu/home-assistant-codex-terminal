@@ -34,15 +34,15 @@ PROMPT_FIX='Citește home-assistant/SKILL.md, ha-automations.md, ha-dashboards.m
 
 TITLES=(
     "Sesiune nouă"
-    "Redenumește device-uri și entități"
+    "Redenumește dispozitivele și senzorii"
     "Ajustează automatizările"
-    "Repară automatizări + dashboard-uri"
+    "Repară referințele sparte"
 )
 DESCRIPTIONS=(
-    "Codex pornește fără prompt prestabilit. Conversație liberă."
-    "Aplică [Area] Producător Model · friendly_name [Area] Nume - Funcție. Idempotent."
-    "Refactorizează alias, mode, description, trigger IDs. Idempotent."
-    "Entități declarate greșit, referințe moarte, integrări vechi."
+    "Pornește o conversație liberă cu Codex despre Home Assistant."
+    "Pune nume clare pe toate dispozitivele și senzorii. Sare peste ce arată deja bine."
+    "Face ordine în automatizările tale. Sare peste cele care arată deja bine."
+    "Caută în automatizări și dashboard-uri trimiterile spre dispozitive care nu mai există și le repară."
 )
 PROMPTS=(
     ""

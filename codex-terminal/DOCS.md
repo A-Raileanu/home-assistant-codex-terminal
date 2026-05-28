@@ -1,62 +1,82 @@
 # Codex Terminal
 
-## About
+## Despre
 
-This add-on provides a web-based terminal with OpenAI Codex CLI preinstalled. It is designed for working on Home Assistant configuration, automations, dashboards, scripts, and add-ons directly from the Home Assistant sidebar.
+Codex Terminal e un add-on care pune **OpenAI Codex** direct în sidebar-ul Home Assistant. Deschizi terminalul din meniul lateral, te autentifici o singură dată cu contul tău OpenAI și ai un asistent care înțelege configurarea ta de HA — automatizări, dashboard-uri, scripturi, scene, dispozitive, template-uri Jinja2.
 
-## Installation
+Codex citește automat starea curentă a HA (versiuni, integrări, automatizări, erori recente) și are skill-uri specializate în română pentru convenții de denumire, refactoring sigur și pattern-uri comune.
 
-1. Add this repository to the Home Assistant add-on store.
-2. Install **Codex Terminal**.
-3. Start the add-on.
-4. Open **Codex Terminal** from the sidebar.
-5. Run `codex login` on first use.
+## Cum funcționează
 
-## Configuration
+1. Adaugă acest repository în Add-on Store.
+2. Instalează **Codex Terminal**.
+3. Pornește add-on-ul (activează **Start on boot** și **Show in sidebar** dacă vrei acces permanent).
+4. Deschide **Codex Terminal** din sidebar.
+5. La prima rulare: `codex login` — autentificare cu contul OpenAI. Auth-ul se salvează în `/data/.codex` și persistă peste restart-uri și update-uri.
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `auto_launch_codex` | `true` | Start Codex automatically when opening the terminal. |
-| `ha_smart_context` | `true` | Generate Home Assistant context and a Codex skill. |
-| `ha_context_refresh_minutes` | `30` | Skip automatic context regeneration while `$CODEX_HOME/AGENTS.md` is newer than this. |
-| `context_detail_level` | `standard` | Context verbosity: `summary`, `standard`, or `full`. |
-| `include_addon_logs` | `false` | Include add-on log samples in generated context. |
-| `enable_ha_mcp` | `true` | Configure the Home Assistant MCP server for Codex. |
-| `mcp_mode` | `ha-mcp` | MCP mode: `ha-mcp`, `official`, `both`, or `disabled`. |
-| `official_mcp_url` | `http://supervisor/core/api/mcp` | Streamable HTTP endpoint for the official HA MCP Server integration. |
-| `ha_mcp_version` | `3.5.1` | Version used for `ha-mcp` registration. |
-| `readonly_mode` | `false` | Refuse helper-command edits when true. |
-| `require_backup_before_edit` | `true` | Keep backup-first editing as the expected workflow. |
-| `enable_device_control` | `false` | Records whether direct device-control workflows are allowed. |
-| `enable_file_tools` | `true` | Records whether file helper workflows are allowed. |
-| `enable_yaml_editing` | `true` | Allows `ha-safe-edit` YAML edit workflows. |
-| `codex_full_permissions` | `true` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` so it does not prompt for approvals. Set to `false` to re-enable per-action confirmation and the sandbox. |
-| `max_log_lines` | `80` | Limits log samples in generated context and helper commands. |
-| `safe_edit_backup_retention_days` | `30` | Delete backup files older than this many days. |
-| `persistent_apk_packages` | `[]` | APK packages to install on startup. |
-| `persistent_pip_packages` | `[]` | Python packages to install on startup. |
+La fiecare deschidere a sidebar-ului vei vedea un **task picker** care îți oferă patru sarcini comune (sesiune nouă, redenumire dispozitive, ajustare automatizări, reparare referințe sparte). Alegi una și Codex pornește direct cu sarcina respectivă.
 
-## Commands
+## Caracteristici
+
+- **Codex CLI interactiv** într-un terminal browser modern (`ttyd`).
+- **Autentificare persistentă** — salvată în `/data/.codex`, supraviețuiește restart-urilor.
+- **Sesiuni `tmux`** — închizi sidebar-ul, revii la aceeași conversație.
+- **Context Home Assistant** generat automat, refresh la 30 minute.
+- **Skill-uri specializate** pentru HA (entități, dispozitive, automatizări, scripturi, scene, dashboards, template-uri, notificări, refactoring) cu convenții în română.
+- **MCP integrat** — `ha-mcp` community sau endpoint-ul oficial Home Assistant MCP Server.
+- **Editare sigură** prin `ha-safe-edit` (backup + validare YAML + `check_config`).
+- **Client WebSocket** (`websocat`) pentru API-ul Home Assistant WebSocket.
+- **Pachete persistente** Alpine/pip care se reinstalează la fiecare start.
+- **Full permissions activate by default** — Codex nu cere aprobare la fiecare acțiune.
+
+## Comenzi utile
 
 ```bash
-codex --cd /config
-codex login
-codex resume --last
-codex mcp list
-codex-ha doctor
-codex-ha check-config
-ha-context
-ha-context --force
-ha-safe-edit check
-persist-install list
+codex --cd /config                 # pornește Codex în /config
+codex login                        # (re)autentificare
+codex resume --last                # reia ultima conversație
+codex mcp list                     # listează serverele MCP înregistrate
+
+codex-ha doctor                    # diagnostic: binare, HA API, MCP, skill-uri, safety
+codex-ha check-config              # validează configurarea Home Assistant
+codex-ha logs <addon_slug>         # ultimele linii de log ale unui add-on
+
+ha-context                         # refresh contextul HA (respectă cache-ul)
+ha-context --force                 # refresh forțat, ignoră cache-ul
+
+ha-safe-edit check                 # validează YAML + check_config înainte de edit
+ha-safe-edit backup /config/automations.yaml
+
+persist-install list               # listează pachetele persistente
+persist-install apk htop           # adaugă un pachet APK persistent
+
 websocat ws://supervisor/core/api/websocket
 ```
 
-`websocat` is bundled for the Home Assistant Core WebSocket API at `ws://supervisor/core/api/websocket`. Send `{"type": "auth", "access_token": "$SUPERVISOR_TOKEN"}` as the first JSON message after the connection opens.
+`websocat` poate vorbi cu Home Assistant Core WebSocket API. Autentifică-te trimițând `{"type": "auth", "access_token": "$SUPERVISOR_TOKEN"}` ca primul mesaj JSON.
+
+## Configurare
+
+Cele mai folosite opțiuni:
+
+| Opțiune                       | Default                              | Ce face                                                                                       |
+| ----------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `auto_launch_codex`           | `true`                               | Afișează task picker-ul la fiecare deschidere; `false` te lasă în bash.                       |
+| `codex_full_permissions`      | `true`                               | Codex pornește fără prompt-uri de aprobare. `false` activează confirmarea pe fiecare acțiune. |
+| `ha_smart_context`            | `true`                               | Generează contextul HA automat la start.                                                      |
+| `ha_context_refresh_minutes`  | `30`                                 | Cache-ul contextului — sare peste regenerare dacă e mai recent decât valoarea asta.           |
+| `context_detail_level`        | `standard`                           | `summary` / `standard` / `full` — câte detalii intră în context.                              |
+| `mcp_mode`                    | `ha-mcp`                             | `ha-mcp` / `official` / `both` / `disabled`.                                                  |
+| `readonly_mode`               | `false`                              | Dacă e `true`, helper-ele refuză orice modificare.                                            |
+| `require_backup_before_edit`  | `true`                               | Workflow backup-first pe `ha-safe-edit`.                                                      |
+| `persistent_apk_packages`     | `[]`                                 | Pachete Alpine reinstalate la fiecare start.                                                  |
+| `persistent_pip_packages`     | `[]`                                 | Pachete pip reinstalate la fiecare start.                                                     |
+
+Vezi README-ul repository-ului pentru tabelul complet.
 
 ## Home Assistant MCP
 
-The add-on can register `ha-mcp` with Codex. It uses the Supervisor token automatically:
+Cu `mcp_mode: ha-mcp` (default), add-on-ul înregistrează automat serverul `ha-mcp` în Codex, cu token-ul Supervisor:
 
 ```bash
 codex mcp add home-assistant \
@@ -65,39 +85,56 @@ codex mcp add home-assistant \
   -- uvx --index-strategy unsafe-best-match ha-mcp@3.5.1
 ```
 
-Use `mcp_mode: official` to register the official Home Assistant MCP Server integration endpoint, or `mcp_mode: both` to register both the local `ha-mcp` stdio server and official streamable HTTP endpoint.
+Pentru `mcp_mode: official`, configurează întâi integrarea **Home Assistant MCP Server** din Settings → Devices & services. Pentru `mcp_mode: both`, sunt înregistrate ambele. Pentru a dezactiva complet: `mcp_mode: disabled`.
 
-Disable MCP by setting:
+## Skill-uri integrate
 
-```yaml
-mcp_mode: disabled
-```
+Add-on-ul instalează în `/data/.codex/skills/` un skill umbrella `home-assistant` cu un index de rutare în română și fișiere pe topic:
 
-## Bundled Skills
+- **ha-entities** — vocabular funcții (120+ termeni RO), entity IDs, device_class.
+- **ha-devices-areas** — convenții pentru dispozitive, areas, labels, inventar persistent.
+- **ha-automations** — automatizări (mode, trigger IDs, choose, repeat, anti-patterns).
+- **ha-scripts-steps** — scripturi cu parametri, alias, variabile.
+- **ha-helpers-scenes** — helpers (boolean, number, timer, counter) și scene.
+- **ha-dashboards** — views, cards, styling, custom cards HACS.
+- **ha-templates** — Jinja2, template sensors, performanță, trigger-based templates.
+- **ha-notifications** — notify.send_message, canale, notificări acționabile.
+- **ha-device-control** — service calls, ZHA/Z2M, lights/climate/cover.
+- **ha-refactoring** — redenumire entități, impact analysis, storage dashboards.
+- **ha-examples** — exemple complete end-to-end cu best practices.
 
-This add-on installs these Codex skills into `/data/.codex/skills` on startup:
+Toate convențiile sunt în română cu diacritice complete. Un al doilea skill `home-assistant-instance` se generează automat de fiecare dată de `ha-context` și conține flag-urile de runtime și safety ale instalării tale.
 
-- `home-assistant`
-- `home-assistant-best-practices`
-- `ha-automation-author`
-- `ha-dashboard-author`
-- `ha-template-debugger`
-- `ha-safe-refactor`
-- `ha-add-on-developer`
-- `ha-troubleshooter`
+## Editare sigură
 
-## Safe Editing
-
-Use `ha-safe-edit` when changing YAML or other Home Assistant config files:
+Folosește `ha-safe-edit` ori de câte ori modifici fișiere din `/config`:
 
 ```bash
 ha-safe-edit backup /config/configuration.yaml
 ha-safe-edit check /config/configuration.yaml
-ha-safe-edit /config/automations.yaml -- sh -c 'your-edit-command'
+ha-safe-edit /config/automations.yaml -- sh -c 'comanda-ta'
 ```
 
-Backups are stored under `/data/safe-edit-backups`.
+Backup-urile se salvează în `/data/safe-edit-backups` și sunt șterse automat după `safe_edit_backup_retention_days` zile (default 30).
 
-## Security
+## Securitate
 
-Codex can read and edit mapped Home Assistant files. The Home Assistant MCP server can also expose broad control of entities, scripts, automations, dashboards, and logs. Review commands before running them on a live home.
+Codex poate citi și edita fișierele de configurare HA mapate în add-on. Cu MCP activ, poate apela și service-uri HA (control entități, automatizări, dashboard-uri, scene).
+
+**Recomandare:** revizuiește comenzile înainte să le rulezi pe o instalare live. Atenție specială la apeluri care:
+
+- deblochează uși sau garaje;
+- pornesc sau opresc alarme;
+- controlează aparate de mare putere (boiler, încălzitor);
+- trimit notificări către contacte de urgență.
+
+Pentru un setup conservator, suprascrie default-urile permisive:
+
+```yaml
+readonly_mode: true
+codex_full_permissions: false
+mcp_mode: "ha-mcp"
+context_detail_level: "summary"
+```
+
+Detalii complete și instrucțiuni avansate în README-ul repository-ului.

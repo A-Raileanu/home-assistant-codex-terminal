@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.6
+
+### UX
+
+- Task picker descriptions rewritten in plain Romanian — dropped jargon (`friendly_name`, "Idempotent", "Refactorize", "trigger IDs", `[Area] Producător Model`) in favour of friendly one-liners that a non-technical user understands at a glance. Option 2 renamed "Redenumește dispozitivele și senzorii"; option 4 renamed "Repară referințele sparte".
+- Sidebar icon changed from `mdi:code-braces` to `mdi:robot` — the add-on shows up as a robot in the Home Assistant sidebar.
+- `config.yaml` `description` translated to Romanian and reframed around the user outcome ("OpenAI Codex direct din sidebar — generează și depanează automatizări, dashboard-uri și YAML cu un asistent care înțelege instalarea ta de Home Assistant.").
+- `codex-terminal/DOCS.md` (shown in the add-on Documentation tab) fully translated to Romanian, restructured, and updated to reflect the current skill layout (`home-assistant` umbrella + `home-assistant-instance` dynamic), the task picker, websocat bundling, and the current `codex_full_permissions` default.
+
+### Fixes
+
+- Task picker Enter key was a no-op because `key=$(read_key)` stripped the trailing newline via command substitution. Read now runs inline in the main loop and the Enter case accepts `''`, `\n`, and `\r`.
+
 ## 1.0.5
 
 ### UX
