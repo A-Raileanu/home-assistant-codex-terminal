@@ -1,7 +1,7 @@
 ---
 name: "Codex Terminal"
 description: "Terminal with OpenAI Codex CLI, persistent auth, Home Assistant context, and MCP"
-version: "0.2.2"
+version: "1.0.0"
 slug: "codex_terminal"
 init: false
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.0
+
+### Skills
+
+- Consolidate the Home Assistant skills into a single discoverable umbrella at `$CODEX_HOME/skills/home-assistant/` so Codex auto-loads them on every session.
+- The umbrella `SKILL.md` is the topic-focused routing index; the topic references (`ha-entities.md`, `ha-devices-areas.md`, `ha-automations.md`, `ha-scripts-steps.md`, `ha-helpers-scenes.md`, `ha-dashboards.md`, `ha-templates.md`, `ha-notifications.md`, `ha-device-control.md`, `ha-refactoring.md`, `ha-examples.md`) and the persistent `inventory.yaml` live alongside it.
+- Split per-installation runtime config and safety flags into a separate `home-assistant-instance/` skill written by `ha-context`. The bundled umbrella is never overwritten between syncs.
+- One-shot migration in `install_bundled_skills` detects the legacy auto-generated `home-assistant/SKILL.md` (lone file, references deleted skills) and replaces it with the bundled umbrella on upgrade. User customizations (additional files in the directory) are preserved.
+
+### Scripts and UX
+
+- Remove `welcome.sh` (was a blocking "Press Enter to continue" banner with stale "What's new" content).
+- Remove `health-check.sh` and the `run_health_check` startup hook. `codex-ha doctor` is now the single health check; it already covers binaries, the HA Core API, MCP, skills validation, and safety options.
+- Trim `codex-session-picker` to four options: reconnect, new, resume last, resume from list, exit. Drop the custom-args / login / bash-shell sub-flows.
+- `validate-skills` is no longer installed on `PATH`; it is invoked internally by `run.sh` and `codex-ha doctor` from `/opt/scripts/validate-skills.sh`.
+- Drop the redundant `codex-ha context-force` alias; use `codex-ha context --force` instead.
+- Update `README.md` and `DOCS.md` to reflect the new bundled-skills layout, the umbrella vs. instance split, and the slimmer command set.
+
 ## 0.2.1
 
 - Add `ha_context_refresh_minutes` option with a 30 minute default.
