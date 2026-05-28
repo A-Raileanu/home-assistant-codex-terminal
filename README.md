@@ -227,7 +227,10 @@ ha-context
 ha-context --force
 ha-safe-edit check
 persist-install list
+websocat ws://supervisor/core/api/websocket
 ```
+
+The bundled `websocat` client can talk to the Home Assistant Core WebSocket API at `ws://supervisor/core/api/websocket`. Authenticate by sending `{"type": "auth", "access_token": "$SUPERVISOR_TOKEN"}` as the first JSON message after the connection opens.
 
 ## Persistent Packages
 

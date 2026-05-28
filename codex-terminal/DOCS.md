@@ -49,7 +49,10 @@ ha-context
 ha-context --force
 ha-safe-edit check
 persist-install list
+websocat ws://supervisor/core/api/websocket
 ```
+
+`websocat` is bundled for the Home Assistant Core WebSocket API at `ws://supervisor/core/api/websocket`. Send `{"type": "auth", "access_token": "$SUPERVISOR_TOKEN"}` as the first JSON message after the connection opens.
 
 ## Home Assistant MCP
 

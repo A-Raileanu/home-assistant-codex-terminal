@@ -1,7 +1,7 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-ARG CODEX_VERSION=0.130.0
+ARG CODEX_VERSION=0.134.0
 
 RUN apk add --no-cache \
     bash \
@@ -23,6 +23,7 @@ RUN apk add --no-cache \
     ttyd \
     uv \
     vim \
+    websocat \
     wget \
     yq \
     && npm install -g "@openai/codex@${CODEX_VERSION}" \

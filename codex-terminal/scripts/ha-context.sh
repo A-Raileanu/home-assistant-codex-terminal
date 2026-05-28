@@ -394,7 +394,8 @@ You are running inside a Home Assistant add-on container.
 
 - Supervisor API base: `http://supervisor`
 - Core API base: `http://supervisor/core/api`
-- Use `Authorization: Bearer $SUPERVISOR_TOKEN`.
+- Core WebSocket: `ws://supervisor/core/api/websocket` (auth via first JSON message `{"type":"auth","access_token":"$SUPERVISOR_TOKEN"}`)
+- Use `Authorization: Bearer $SUPERVISOR_TOKEN` for HTTP.
 - The `home-assistant` MCP server may be available through Codex.
 
 ## Useful Commands
@@ -406,6 +407,7 @@ ha-safe-edit check
 codex mcp list
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/info
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/api/states
+websocat ws://supervisor/core/api/websocket   # send {"type":"auth","access_token":"$SUPERVISOR_TOKEN"} first
 ```
 
 ## Related Skills

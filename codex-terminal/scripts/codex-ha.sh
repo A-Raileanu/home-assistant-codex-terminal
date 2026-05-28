@@ -65,7 +65,7 @@ doctor() {
     echo "Codex Terminal doctor"
     echo ""
 
-    for bin in codex curl jq python3 yq tmux ttyd uvx bwrap; do
+    for bin in codex curl jq python3 yq tmux ttyd uvx bwrap websocat; do
         if command -v "$bin" >/dev/null 2>&1; then
             echo "OK: $bin"
         else

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.3
+
+### Tooling
+
+- Upgrade the bundled Codex CLI from `0.130.0` to `0.134.0` (latest stable on npm at release time).
+- Bundle the `websocat` WebSocket client (Alpine `websocat` package) so Codex can talk to the Home Assistant Core WebSocket API at `ws://supervisor/core/api/websocket`. Authenticate by sending `{"type": "auth", "access_token": "$SUPERVISOR_TOKEN"}` as the first JSON message after the connection opens.
+- `codex-ha doctor` now checks for the `websocat` binary and flags it if missing.
+- The dynamic `home-assistant-instance` skill, the README, and the DOCS cheat-sheets include a one-line websocat example so Codex discovers the tool at session start.
+
 ## 1.0.2
 
 ### Skills
