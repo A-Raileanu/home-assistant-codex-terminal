@@ -145,18 +145,6 @@ launch_with_prompt() {
     exec tmux new-session -s "$TMUX_SESSION_NAME" "$cmd"
 }
 
-read_key() {
-    local key rest
-    IFS= read -rsn1 key
-    if [ "$key" = $'\033' ]; then
-        IFS= read -rsn2 -t 0.05 rest 2>/dev/null || true
-        if [ -n "${rest:-}" ]; then
-            key="${key}${rest}"
-        fi
-    fi
-    printf '%s' "$key"
-}
-
 main() {
     if tmux has-session -t "$TMUX_SESSION_NAME" 2>/dev/null; then
         exec tmux attach-session -t "$TMUX_SESSION_NAME"
@@ -167,9 +155,18 @@ main() {
 
     render
 
+    local key rest
     while true; do
-        local key
-        key="$(read_key)"
+        key=""
+        rest=""
+        IFS= read -rsn1 key
+        if [ "$key" = $'\033' ]; then
+            IFS= read -rsn2 -t 0.05 rest 2>/dev/null || true
+            if [ -n "${rest}" ]; then
+                key="${key}${rest}"
+            fi
+        fi
+
         case "$key" in
             $'\033[A')
                 SELECTED=$(((SELECTED - 1 + COUNT) % COUNT))
@@ -184,7 +181,7 @@ main() {
                 printf '\033[H\033[J'
                 exit 0
                 ;;
-            $'\n'|$'\r')
+            ''|$'\n'|$'\r')
                 launch_with_prompt "${PROMPTS[$SELECTED]}"
                 ;;
             'q'|'Q')
