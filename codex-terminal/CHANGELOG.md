@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2
+
+### Skills
+
+- Strict skills cleanup on version change: `$CODEX_HOME/skills/` is now wiped and reinstalled from the bundle on every add-on upgrade. Only skills shipped in the repo remain; ad-hoc or user-added skill directories are removed. The dynamic `home-assistant-instance/` skill is regenerated immediately afterwards by `ha-context` during background initialization.
+- Make the umbrella `home-assistant` skill enforce naming conventions. The `SKILL.md` description and a new "Reguli obligatorii" block require the AI to consult the relevant `ha-*.md` file before creating, renaming, or modifying any device, entity, area, label, automation, script, scene, helper, dashboard, notification, template, or device-control call — and to ask the user instead of improvising when a convention is unclear.
+
 ## 1.0.1
 
 ### Defaults

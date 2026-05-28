@@ -1,11 +1,43 @@
 ---
 name: home-assistant
-description: Index principal Home Assistant Skills. Citește acest fișier întâi pentru a determina ce fișier specific să folosești.
+description: Index OBLIGATORIU pentru Home Assistant. Trebuie consultat ÎNAINTE de orice operațiune care creează, redenumește sau modifică un device, entitate, area, label, automatizare, script, scenă, helper, dashboard, notificare sau template — pentru a aplica convențiile de denumire ale repo-ului.
 ---
 
 # Home Assistant Skills — Index
 
 Skill-uri pentru inventar consistent și automatizări lizibile. **Citește doar fișierul relevant pentru taskul curent** — nu citi tot repo-ul.
+
+---
+
+## ⛔ Reguli obligatorii (nu sări peste)
+
+**Înainte de orice operațiune care creează, redenumește sau modifică un element vizibil în Home Assistant**, aplică integral convențiile de denumire din fișierul corespunzător. Nu inventa propriile reguli, nu improviza nume — convențiile sunt explicite și sursa de adevăr.
+
+| Element atins | Fișier OBLIGATORIU de citit înainte |
+|---|---|
+| Device (nume, model, identifiers) | [ha-devices-areas.md](ha-devices-areas.md#device-names) |
+| Entitate (`entity_id`, friendly name, `has_entity_name`, `device_class`, `state_class`) | [ha-entities.md](ha-entities.md) |
+| Area (creare / redenumire) | [ha-devices-areas.md](ha-devices-areas.md#areas) |
+| Label (slug, atribuire pe tipuri de device) | [ha-devices-areas.md](ha-devices-areas.md#labels) |
+| Automatizare (alias, `mode`, trigger IDs, condiții) | [ha-automations.md](ha-automations.md) |
+| Script (alias, `fields:`, pași `sequence:`, variabile) | [ha-scripts-steps.md](ha-scripts-steps.md) |
+| Scenă | [ha-helpers-scenes.md](ha-helpers-scenes.md#scene-uri) |
+| Helper (boolean, number, timer, counter, template etc.) | [ha-helpers-scenes.md](ha-helpers-scenes.md) |
+| Dashboard, view, card | [ha-dashboards.md](ha-dashboards.md) |
+| Notificare / alertă / TTS | [ha-notifications.md](ha-notifications.md) |
+| Template (Jinja2, template sensor, trigger-based) | [ha-templates.md](ha-templates.md) |
+| Service call / device control | [ha-device-control.md](ha-device-control.md) |
+| Redenumire / refactoring entități | [ha-refactoring.md](ha-refactoring.md) |
+
+**Workflow obligatoriu pentru orice modificare tangibilă:**
+
+1. **Identifică tipul de element** atins de task.
+2. **Citește fișierul corespunzător + `inventory.yaml`** (acesta din urmă întotdeauna dacă atingi device-uri sau entități — e sursa de adevăr).
+3. **Aplică toate convențiile** din fișier (limbă, casing, slug-uri, structură, câmpuri tehnice obligatorii). Convenția generală a repo-ului: **română** peste tot (alias-uri, comentarii, friendly names, descrieri) cu diacritice complete; **engleză** doar pentru `entity_id` slugs, slug-uri de label și câmpuri tehnice YAML.
+4. **Dacă o convenție pare neclară sau lipsește**, întreabă utilizatorul înainte să improvizezi. Nu inventa.
+5. **La final**, dacă ai modificat ceva tangibil (device, entitate, redenumire, label nou), actualizează `inventory.yaml` cu o intrare nouă în `change_log:` și, după caz, în `devices:`.
+
+Inconsistența în denumire produce regresiuni la dashboards, automatizări existente, statistici long-term și integrări care depind de `entity_id`. Trateaz-o ca pe un blocker, nu ca pe un detaliu cosmetic.
 
 ---
 
@@ -15,8 +47,6 @@ Skill-uri pentru inventar consistent și automatizări lizibile. **Citește doar
 2. **Citește DOAR fișierul corespunzător** + `inventory.yaml` dacă taskul atinge device-uri/entități.
 3. **La sfârșit** dacă ai modificat ceva tangibil în HA (device, entitate, redenumire): actualizează `inventory.yaml` cu o intrare nouă în `change_log:`.
 4. **Nu citi în avans** fișiere care nu se aplică — token-uri irosite.
-
-**Convenție generală a repo-ului:** română peste tot (alias-uri, comentarii, friendly names, descrieri) cu diacritice complete; engleză doar pentru entity_id slugs, slug-uri de label și câmpuri tehnice YAML.
 
 ---
 
