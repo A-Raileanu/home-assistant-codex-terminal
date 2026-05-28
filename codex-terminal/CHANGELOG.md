@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.4
+
+### Skills
+
+- Change the entity friendly_name convention: every entity must now have `friendly_name` set explicitly to `"[Area] Nume dispozitiv - <Funcție>"`. The previous "rely on `has_entity_name: True` auto-concatenation" approach broke down in HA views that show only the entity friendly_name without device context (statistics list, dropdowns, log filters, notifications, voice assistants). The umbrella `SKILL.md`, `ha-entities.md` (intro, examples, rules), and `ha-devices-areas.md` (new-device cheat sheet) all reflect the new rule; the function vocabulary tables now expose the post-separator `<Funcție>` instead of a full entity name.
+
 ## 1.0.3
 
 ### Tooling

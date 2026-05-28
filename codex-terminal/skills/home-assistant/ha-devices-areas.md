@@ -305,11 +305,12 @@ Când adaugi un device nou, parcurge în ordine:
 2. **Adaugă device-ul în area corectă** (din lista canonică de mai sus).
 3. **Setează device name:** `[Area] Producător Model [#N]`.
 4. **Atribuie label-ul de tip** (din lista canonică). Dacă niciun label existent nu se potrivește, creează unul nou și actualizează lista + `labels:` din inventory.
-5. **Pentru fiecare entitate auto-creată:**
-   - dacă e entitatea principală a device-ului → `name = None`
-   - dacă e o sub-funcție → name scurt în **engleză**, doar funcția (`Power`, `Motion`)
+5. **Pentru fiecare entitate setează `friendly_name` explicit cu prefix `[Area] Nume dispozitiv - <Funcție>`** (vezi `ha-entities.md` pentru format complet și vocabularul de funcții):
+   - entitatea principală a device-ului → `friendly_name = [Area] Nume dispozitiv` (fără ` - <Funcție>`)
+   - sub-funcție → `friendly_name = [Area] Nume dispozitiv - <Funcție>` cu funcția în română din vocabular
+   - regula se aplică indiferent dacă integrarea respectă `has_entity_name` sau nu — UI-ul afișează `friendly_name`-ul explicit în multe view-uri unde device-ul nu apare deloc (statistici, dropdown-uri, log filters, notificări)
 6. **Verifică entity_id-urile:** dacă au sufixe random (`_a1b2c3`), redenumește la `<slug_camera>_<function>`.
-7. **Pentru integrări care nu respectă `has_entity_name`** (MQTT raw, unele cloud), setează manual friendly name: `[Area] Producător Model Function`.
+7. **Pentru bulk renames sau control prin git**, folosește `customize:` în `configuration.yaml` în loc de UI rename (vezi `ha-entities.md` secțiunea "Cum aplici prefixul").
 8. **Dezactivează entitățile auto-create pe care nu le folosești** (vezi `ha-entities.md` secțiunea dezactivare).
 9. **Dacă device-ul înlocuiește unul existent sau ai schimbat entity_id-uri:** verifică automatizările, scripturile, scenele, grupurile și helpers (vezi `ha-refactoring.md`).
 10. **Actualizează `inventory.yaml`** cu device-ul nou, entitățile și labels-urile lui (vezi secțiunea Inventar de mai jos).

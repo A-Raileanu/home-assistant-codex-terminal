@@ -7,20 +7,50 @@ description: Vocabular entity names HA (120+ termeni RO, 13 categorii), device_c
 
 ## Entity Names — Friendly Name (în Română)
 
-Home Assistant 2023+ folosește `has_entity_name: True` — entity name-ul se concatenează automat după device name. Asta înseamnă:
+### ⛔ Regulă obligatorie: prefix `[Area] Nume dispozitiv -` în friendly_name
 
-> **Nu repeta camera sau brandul în entity name.** Scrie doar funcția, în română.
+**Fiecare entitate** (sensor, binary_sensor, switch, light, sub-funcție, statistic, diagnostic — fără excepție) trebuie să aibă `friendly_name` explicit setat în formatul de mai jos. Nu te baza pe `has_entity_name: True` pentru auto-concatenare — multe view-uri din HA (statistici, notificări, dropdown-uri, log filters, logbook, energy dashboard, voice assistants) afișează **doar `friendly_name`-ul entității**, fără device-ul de care aparține. Fără prefix obții liste imposibil de citit (`Procent CPU`, `Procent CPU`, `Procent CPU`, …).
 
 ### Format canonic
 
 ```
-<Funcție> [<Detaliu>]
+[Area] Nume dispozitiv - <Funcție>
 ```
 
-### Vocabular standard
+Reguli stricte:
+- `[Area]` între paranteze drepte exact ca în device name (vezi `ha-devices-areas.md#device-names`).
+- `Nume dispozitiv` = restul device name-ului, fără paranteze (`Shelly Pro 3EM`, `Aqara FP2`, `Synology DS920+`).
+- ` - ` (spațiu, liniuță, spațiu) ca separator între device și funcție.
+- `<Funcție>` din vocabularul standard de mai jos (capitalizare pe primul cuvânt, diacritice corecte).
+- Pentru **entitatea principală** a unui device (un singur switch/light/sensor): `friendly_name = [Area] Nume dispozitiv` (fără ` - <Funcție>`).
+
+### Cum aplici prefixul (3 căi posibile)
+
+1. **UI Settings → Devices & services → click entitate → Friendly name override** — cel mai rapid pentru entități auto-create. HA salvează override-ul în `core.entity_registry`.
+2. **`customize:` în `configuration.yaml`** — pentru bulk renames sau când vrei să ții denumirile sub control git.
+   ```yaml
+   homeassistant:
+     customize:
+       sensor.synology_cpu_percent:
+         friendly_name: "[Server] Synology DS920+ - Procent CPU"
+   ```
+3. **Template sensor / MQTT cu `has_entity_name: false` + `name:` explicit** — pentru entități create în YAML.
+   ```yaml
+   template:
+     - sensor:
+         - name: "[Cameră Tehnică] Shelly Pro 3EM - Putere totală"
+           unique_id: tech_room_shelly_pro_3em_total_power
+           state: "{{ states('sensor.shelly_pro_3em_a_power') | float + ... }}"
+   ```
+
+`has_entity_name: True` poate rămâne setat pe device-ul integrat, dar **override-ul de `friendly_name` are întâietate** la afișare — deci nu vei vedea dublare.
+
+### Vocabular standard (doar partea `<Funcție>`)
+
+Tabelele de mai jos listează **doar funcția** — partea care urmează după ` - ` în friendly_name. Combină-le obligatoriu cu prefixul `[Area] Nume dispozitiv -`.
 
 Fiecare tabel conține trei coloane:
-- **Entity name (RO)** — ce setezi în HA ca friendly name (vizibil în UI)
+- **Funcție (RO)** — partea după ` - ` din friendly_name (vizibilă în UI)
 - **Entity ID slug (EN)** — ce folosești în `<function>` din entity_id (vezi secțiunea Entity IDs)
 - **Detaliu** — unitate de măsură, context, integrări
 
@@ -32,7 +62,7 @@ Fiecare tabel conține trei coloane:
 
 #### Energie & Electric
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Putere`                 | `power`                 | W, kW                                                |
 | `Energie`                | `energy`                | kWh, Wh                                              |
@@ -56,7 +86,7 @@ Fiecare tabel conține trei coloane:
 
 #### Climat & Mediu Interior
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Temperatură`            | `temperature`           | °C                                                   |
 | `Temperatură țintă`      | `target_temperature`    | setpoint termostat                                   |
@@ -75,7 +105,7 @@ Fiecare tabel conține trei coloane:
 
 #### Iluminare & Radiație
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Iluminare`              | `illuminance`           | lx — fotoresistență, BH1750                          |
 | `Iradianță`              | `irradiance`            | W/m² — piranometru, stații meteo                     |
@@ -86,7 +116,7 @@ Fiecare tabel conține trei coloane:
 
 #### Mișcare, Prezență & Ocupare
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Mișcare`                | `motion`                | binary — orice PIR standard                          |
 | `Mișcare persoană`       | `person_motion`         | AI camera (Reolink, Frigate)                         |
@@ -100,7 +130,7 @@ Fiecare tabel conține trei coloane:
 
 #### Securitate & Acces
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Contact`                | `contact`               | binary — senzor magnetic ușă/fereastră               |
 | `Ușă`                    | `door`                  | binary — device class `door`                         |
@@ -117,7 +147,7 @@ Fiecare tabel conține trei coloane:
 
 #### Apă, Scurgeri & Irigație
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Scurgere`               | `leak`                  | binary — water leak puck                             |
 | `Inundație`              | `flooding`              | binary — sinonim Scurgere, device class `moisture`   |
@@ -132,7 +162,7 @@ Fiecare tabel conține trei coloane:
 
 #### Calitate Aer & Gaze
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `CO2`                    | `co2`                   | ppm — Aqara TVOC, SCD40, Aranet4                     |
 | `CO`                     | `co`                    | ppm — detector monoxid de carbon                     |
@@ -153,7 +183,7 @@ Fiecare tabel conține trei coloane:
 
 #### Baterie & Semnal
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Baterie`                | `battery`               | % — senzor principal                                 |
 | `Tensiune baterie`       | `battery_voltage`       | V — dezactivează dacă există `Baterie` ca %          |
@@ -167,7 +197,7 @@ Fiecare tabel conține trei coloane:
 
 #### Rețea & Conectivitate
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Conectat`               | `connected`             | binary — device online/offline                       |
 | `Viteză descărcare`      | `download_speed`        | Mbps                                                 |
@@ -182,7 +212,7 @@ Fiecare tabel conține trei coloane:
 
 #### Acoperiri Mecanice (Cover)
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | *(None)*                 | —                       | entitatea cover principală — moștenește device name  |
 | `Poziție`                | `position`              | 0–100% — dacă expusă separat ca senzor               |
@@ -192,7 +222,7 @@ Fiecare tabel conține trei coloane:
 
 #### Solar & Energie Verde
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Putere PV`              | `pv_power`              | W, kW — producție instantanee panouri solare         |
 | `Energie PV`             | `pv_energy`             | kWh — total produs                                   |
@@ -210,7 +240,7 @@ Fiecare tabel conține trei coloane:
 
 #### Stocare Energie (Baterie de casă) & EV
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Nivel încărcare`        | `state_of_charge`       | % — baterie stocare (Powerwall, LUNA) sau EV         |
 | `Autonomie`              | `range`                 | km — EV                                              |
@@ -228,7 +258,7 @@ Fiecare tabel conține trei coloane:
 
 #### Meteo (Stație externă)
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Viteză vânt`            | `wind_speed`            | m/s, km/h                                            |
 | `Rafală vânt`            | `wind_gust`             | m/s                                                  |
@@ -244,7 +274,7 @@ Fiecare tabel conține trei coloane:
 
 #### Electrocasnice & Stare Aparate
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | `Stare`                  | `status`                | text/enum — Running / Idle / Finished / Error        |
 | `Mod`                    | `mode`                  | text/enum — Eco / Bumbac / Rapid etc.                |
@@ -261,7 +291,7 @@ Fiecare tabel conține trei coloane:
 
 #### Multimedia & AV
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | *(None)*                 | —                       | entitatea `media_player` principală                  |
 | `Volum`                  | `volume`                | 0–100% — dacă expus separat                          |
@@ -272,7 +302,7 @@ Fiecare tabel conține trei coloane:
 
 #### Diverse / Utility
 
-| Entity name (RO)         | Entity ID slug (EN)     | Detaliu                                              |
+| Funcție (RO)             | Entity ID slug (EN)     | Detaliu                                              |
 | ------------------------ | ----------------------- | ---------------------------------------------------- |
 | *(None)*                 | —                       | entitatea principală — moștenește device name        |
 | `Funcționează`           | `running`               | binary — aspirator robot, pompă, circuit             |
@@ -288,22 +318,26 @@ Fiecare tabel conține trei coloane:
 
 ---
 
-### Exemple complete (cum apare în UI = Device + Entity)
+### Exemple complete (friendly_name explicit)
 
-| Device                                | Entity name (RO)        | Friendly name rezultat                                        |
-| ------------------------------------- | ----------------------- | ------------------------------------------------------------- |
-| `[Cameră Tehnică] Shelly Pro 3EM`     | `Putere fază A`         | `[Cameră Tehnică] Shelly Pro 3EM Putere fază A`               |
-| `[Cameră Tehnică] Shelly Pro 3EM`     | `Energie totală`        | `[Cameră Tehnică] Shelly Pro 3EM Energie totală`              |
-| `[Dormitor #1] IKEA TRÅDFRI E27`      | *(None)*                | `[Dormitor #1] IKEA TRÅDFRI E27`                              |
-| `[Baie #1] Aqara FP2`                 | `Prezență`              | `[Baie #1] Aqara FP2 Prezență`                                |
-| `[Baie #1] Aqara FP2`                 | `Iluminare`             | `[Baie #1] Aqara FP2 Iluminare`                               |
-| `[Curte] Reolink RLC-823A`            | `Mișcare persoană`      | `[Curte] Reolink RLC-823A Mișcare persoană`                   |
-| `[Dormitor #1] Aqara T1`              | `Punct de rouă`         | `[Dormitor #1] Aqara T1 Punct de rouă`                        |
-| `[Acoperiș] Ecowitt GW2000`           | `Viteză vânt`           | `[Acoperiș] Ecowitt GW2000 Viteză vânt`                       |
-| `[Acoperiș] Ecowitt GW2000`           | `Intensitate ploaie`    | `[Acoperiș] Ecowitt GW2000 Intensitate ploaie`                |
-| `[Cameră Tehnică] Huawei SUN2000`     | `Putere PV`             | `[Cameră Tehnică] Huawei SUN2000 Putere PV`                   |
-| `[Garaj] go-eCharger HOME+`           | `Putere încărcare`      | `[Garaj] go-eCharger HOME+ Putere încărcare`                  |
-| `[Bucătărie] Bosch WAU28U00BY`        | `Timp rămas`            | `[Bucătărie] Bosch WAU28U00BY Timp rămas`                     |
+`friendly_name` setat explicit pe entitate, cu prefix `[Area] Nume dispozitiv -`:
+
+| Device                                | Funcție                 | friendly_name                                                  |
+| ------------------------------------- | ----------------------- | -------------------------------------------------------------- |
+| `[Cameră Tehnică] Shelly Pro 3EM`     | `Putere fază A`         | `[Cameră Tehnică] Shelly Pro 3EM - Putere fază A`              |
+| `[Cameră Tehnică] Shelly Pro 3EM`     | `Energie totală`        | `[Cameră Tehnică] Shelly Pro 3EM - Energie totală`             |
+| `[Dormitor #1] IKEA TRÅDFRI E27`      | *(principal)*           | `[Dormitor #1] IKEA TRÅDFRI E27`                               |
+| `[Baie #1] Aqara FP2`                 | `Prezență`              | `[Baie #1] Aqara FP2 - Prezență`                               |
+| `[Baie #1] Aqara FP2`                 | `Iluminare`             | `[Baie #1] Aqara FP2 - Iluminare`                              |
+| `[Curte] Reolink RLC-823A`            | `Mișcare persoană`      | `[Curte] Reolink RLC-823A - Mișcare persoană`                  |
+| `[Dormitor #1] Aqara T1`              | `Punct de rouă`         | `[Dormitor #1] Aqara T1 - Punct de rouă`                       |
+| `[Acoperiș] Ecowitt GW2000`           | `Viteză vânt`           | `[Acoperiș] Ecowitt GW2000 - Viteză vânt`                      |
+| `[Acoperiș] Ecowitt GW2000`           | `Intensitate ploaie`    | `[Acoperiș] Ecowitt GW2000 - Intensitate ploaie`               |
+| `[Cameră Tehnică] Huawei SUN2000`     | `Putere PV`             | `[Cameră Tehnică] Huawei SUN2000 - Putere PV`                  |
+| `[Garaj] go-eCharger HOME+`           | `Putere încărcare`      | `[Garaj] go-eCharger HOME+ - Putere încărcare`                 |
+| `[Bucătărie] Bosch WAU28U00BY`        | `Timp rămas`            | `[Bucătărie] Bosch WAU28U00BY - Timp rămas`                    |
+| `[Server] Synology DS920+`            | `Procent CPU`           | `[Server] Synology DS920+ - Procent CPU`                       |
+| `[Server] Synology DS920+`            | `Cea mai nouă versiune` | `[Server] Synology DS920+ - Cea mai nouă versiune`             |
 
 ### Device classes recomandate
 
@@ -342,15 +376,17 @@ Fiecare tabel conține trei coloane:
 
 > **Important pentru Energy Dashboard:** un senzor de energie are nevoie de `device_class: energy` + `state_class: total_increasing` (sau `total`) + `unit_of_measurement: kWh` pentru a apărea ca sursă selectabilă.
 
-### Reguli pentru entity name
+### Reguli pentru friendly_name
 
-- **Caută în vocabularul de mai sus.** Folosește termenul exact din coloana *Entity name (RO)* — majusculă pe primul cuvânt, diacritice corecte.
+- **friendly_name începe ÎNTOTDEAUNA cu `[Area] Nume dispozitiv -`** — fără excepție, indiferent că entitatea e auto-creată, template, MQTT, statistic sau diagnostic. Vezi secțiunea de format canonic de mai sus.
+- **Caută funcția în vocabularul de mai sus.** Folosește termenul exact din coloana *Funcție (RO)* — majusculă pe primul cuvânt, diacritice corecte.
 - **Dacă funcția nu există în niciun tabel**, folosești un termen descriptiv nou în română. Documentează-l în `change_log` la `summary`.
 - **Abrevieri tehnice** (CO2, TVOC, PM2.5, RSSI, pH, SSID) se păstrează neschimbate — sunt termeni universali.
 - **Pentru relee/canale numerotate fără funcție clară:** `Canal 1`, `Canal 2`. Dacă funcția e clară, folosește-o direct (`Lumină tavan`, `Bandă LED TV`).
-- **Pentru entitatea "principală" a device-ului** (un singur switch/light/sensor), lasă entity name `None` — moștenește direct device name-ul.
+- **Pentru entitatea "principală" a device-ului** (un singur switch/light/sensor), `friendly_name = [Area] Nume dispozitiv` (fără ` - <Funcție>`).
 - **Nu pune unități de măsură** în nume (`W`, `°C`, `lux`) — sunt deja la state.
-- **Nu repeta domeniul** în entity name (`light.living_ceiling` → entity name `None`, nu `Lumină`).
+- **Nu repeta domeniul** în funcție (`light.living_ceiling` cu device `[Living] IKEA TRÅDFRI E27` → friendly_name `[Living] IKEA TRÅDFRI E27`, fără `- Lumină`).
+- **Verifică listele "fără context"** după redenumire: deschide Developer Tools → Statistics și Settings → Devices → orice device atins; toate entitățile trebuie să apară cu prefix complet.
 
 ---
 

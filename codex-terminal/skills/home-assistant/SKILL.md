@@ -34,8 +34,9 @@ Skill-uri pentru inventar consistent și automatizări lizibile. **Citește doar
 1. **Identifică tipul de element** atins de task.
 2. **Citește fișierul corespunzător + `inventory.yaml`** (acesta din urmă întotdeauna dacă atingi device-uri sau entități — e sursa de adevăr).
 3. **Aplică toate convențiile** din fișier (limbă, casing, slug-uri, structură, câmpuri tehnice obligatorii). Convenția generală a repo-ului: **română** peste tot (alias-uri, comentarii, friendly names, descrieri) cu diacritice complete; **engleză** doar pentru `entity_id` slugs, slug-uri de label și câmpuri tehnice YAML.
-4. **Dacă o convenție pare neclară sau lipsește**, întreabă utilizatorul înainte să improvizezi. Nu inventa.
-5. **La final**, dacă ai modificat ceva tangibil (device, entitate, redenumire, label nou), actualizează `inventory.yaml` cu o intrare nouă în `change_log:` și, după caz, în `devices:`.
+4. **Regula cheie pentru entități:** `friendly_name = "[Area] Nume dispozitiv - <Funcție>"` explicit pe **fiecare** entitate (nu te baza pe `has_entity_name`). Pentru entitatea principală a unui device fără sub-funcții: `friendly_name = "[Area] Nume dispozitiv"`. Detalii și vocabular de funcții: [ha-entities.md](ha-entities.md#format-canonic).
+5. **Dacă o convenție pare neclară sau lipsește**, întreabă utilizatorul înainte să improvizezi. Nu inventa.
+6. **La final**, dacă ai modificat ceva tangibil (device, entitate, redenumire, label nou), actualizează `inventory.yaml` cu o intrare nouă în `change_log:` și, după caz, în `devices:`.
 
 Inconsistența în denumire produce regresiuni la dashboards, automatizări existente, statistici long-term și integrări care depind de `entity_id`. Trateaz-o ca pe un blocker, nu ca pe un detaliu cosmetic.
 
