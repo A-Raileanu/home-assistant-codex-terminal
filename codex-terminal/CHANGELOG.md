@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.8
+
+### UX
+
+- Welcome task picker — the four actionable presets (#2 "Am adăugat un dispozitiv nou", #3 "Redenumește dispozitivele și senzorii", #4 "Ajustează automatizările", #5 "Repară referințele sparte") now tell Codex to first present a summary of the proposed changes and wait for explicit confirmation before writing anything to `/config`. Codex applies (and reports) only after you approve, and re-summarises if you ask for adjustments. Option #1 "Sesiune nouă" is unchanged. A shared `PROMPT_CONFIRM` gate keeps the wording consistent across all four presets.
+
+### Fixes
+
+- Web terminal scrollback now works: `tmux` mouse support is enabled (`set -g mouse on` in `tmux.conf`), so the scroll wheel scrolls back through the Codex conversation / pane history (50 000-line buffer). Hold `Shift` to fall back to the browser's native text selection and copy.
+
 ## 1.0.7
 
 ### Features
