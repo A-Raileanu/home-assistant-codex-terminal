@@ -106,8 +106,8 @@ Cu `auto_launch_codex: true` (default), la fiecare deschidere de sidebar Codex T
 ```
 
 - **Opțiunea 1** lansează Codex normal, fără mesaj inițial — alege asta pentru conversații libere.
-- **Opțiunea 2** te întreabă întâi ce dispozitiv (sau dispozitive) tocmai ai adăugat și abia după ce îi dai numele redenumește doar acel device și entitățile lui conform convenției.
-- **Opțiunile 3–5** pornesc Codex cu un prompt pre-completat care declanșează direct workflow-ul (citește skill-urile relevante, aplică convențiile, folosește `ha-safe-edit`, raportează ce a schimbat).
+- **Opțiunea 2** te întreabă întâi ce dispozitiv (sau dispozitive) tocmai ai adăugat, apoi îți arată un sumar cu modificările propuse pentru acel device și entitățile lui și așteaptă confirmarea ta înainte să scrie ceva pe `/config`.
+- **Opțiunile 3–5** pornesc Codex cu un prompt pre-completat care citește skill-urile relevante și pregătește modificările conform convențiilor. Înainte de a scrie pe `/config`, Codex îți afișează un sumar cu tot ce vrea să schimbe și te întreabă dacă să aplice așa sau vrei să ajustezi ceva — aplică (cu `ha-safe-edit`) și raportează doar după confirmarea ta.
 - Toate trei sunt **idempotente** — sare peste ce respectă deja convenția, deci poți rula opțiunea 2 lunar fără să strice nimic.
 - Dacă există deja o sesiune `tmux` activă (ai închis sidebar-ul și revii), picker-ul e sărit și ești reconectat automat la sesiunea existentă.
 
