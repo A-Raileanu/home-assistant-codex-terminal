@@ -28,24 +28,29 @@ DOT='●'
 # ----- Preset prompts -----
 PROMPT_RENAME='Citește home-assistant/SKILL.md, ha-devices-areas.md, ha-entities.md și inventory.yaml. Apoi redenumește toate device-urile și entitățile conform convenției: device-uri ca "[Area] Producător Model [#N]", iar friendly_name pe fiecare entitate ca "[Area] Nume dispozitiv - Funcție" (sau doar "[Area] Nume dispozitiv" pentru entitatea principală). Ignoră complet device-urile și entitățile care deja respectă convenția — nu modifica nimic acolo. Folosește ha-safe-edit pentru orice scriere pe /config. La final, actualizează inventory.yaml cu o intrare nouă în change_log: și raportează lista a ce ai schimbat.'
 
+PROMPT_NEW_DEVICE='Am adăugat unul sau mai multe dispozitive noi în Home Assistant și vreau să le aduc la convenție. Citește mai întâi home-assistant/SKILL.md, ha-devices-areas.md, ha-entities.md și inventory.yaml ca să cunoști convenția și ce există deja. Apoi ÎNTREABĂ-MĂ exact ce dispozitiv sau dispozitive am adăugat (nume/producător/model și în ce cameră) și AȘTEAPTĂ răspunsul meu — nu presupune și nu începe redenumirea înainte să-ți spun. După ce îți dau numele, identifică device-urile respective în /config și redenumește DOAR pe acelea, atât device-ul cât și entitățile lui, conform convenției: device name ca "[Cameră] Producător Model [#N]" (folosește #N doar dacă mai există unul identic în aceeași cameră), atribuie label-ul de tip potrivit din lista canonică și setează friendly_name pe FIECARE entitate ca "[Cameră] Nume dispozitiv - Funcție" (sau doar "[Cameră] Nume dispozitiv" pentru entitatea principală). Corectează entity_id-urile cu sufixe random la "<slug_cameră>_<funcție>" și dezactivează entitățile auto-create pe care nu le folosești. Verifică dacă vreo automatizare/script/scenă/grup/helper/dashboard trebuie actualizat. Folosește ha-safe-edit pentru orice scriere pe /config. La final, adaugă device-urile noi în inventory.yaml (în devices: și o intrare nouă în change_log:) și raportează lista a ce ai schimbat.'
+
 PROMPT_AUTOMATIONS='Citește home-assistant/SKILL.md și ha-automations.md. Apoi parcurge toate automatizările din /config (automations.yaml + fișierele din .storage/automation) și ajustează-le conform convențiilor: alias descriptiv în română cu diacritice, mode corect pentru tipul de trigger (restart pentru motion/timeouts, queued pentru secvențiale, parallel pentru per-entity independente, single doar pentru one-shot), description pe cele complexe, trigger IDs pe multi-trigger, condiții native în loc de template unde se poate. Ignoră complet automatizările care deja respectă convenția — nu modifica nimic acolo. Folosește ha-safe-edit pentru orice scriere. La final, raportează lista a ce ai schimbat.'
 
 PROMPT_FIX='Citește home-assistant/SKILL.md, ha-automations.md, ha-dashboards.md și ha-refactoring.md. Apoi caută în automatizări (automations.yaml + .storage/automation) și în dashboard-uri (.storage/lovelace*, lovelace YAML mode dacă există) toate entitățile declarate greșit: entity_id-uri inexistente, sintaxă invalidă, referințe la integrări vechi care nu mai există, device_id-uri orfane. Pentru fiecare problemă găsită, propune corecția (entity nou cu unique_id stabil, înlocuire entity_id, ștergere referință moartă) și aplica-o folosind ha-safe-edit. La final, raportează lista completă a entităților reparate și a referințelor șterse.'
 
 TITLES=(
     "Sesiune nouă"
+    "Am adăugat un dispozitiv nou"
     "Redenumește dispozitivele și senzorii"
     "Ajustează automatizările"
     "Repară referințele sparte"
 )
 DESCRIPTIONS=(
     "Pornește o conversație liberă cu Codex despre Home Assistant."
+    "Spune-i ce dispozitiv ai adăugat și îl redenumește pe el și senzorii lui conform convenției."
     "Pune nume clare pe toate dispozitivele și senzorii. Sare peste ce arată deja bine."
     "Face ordine în automatizările tale. Sare peste cele care arată deja bine."
     "Caută în automatizări și dashboard-uri trimiterile spre dispozitive care nu mai există și le repară."
 )
 PROMPTS=(
     ""
+    "$PROMPT_NEW_DEVICE"
     "$PROMPT_RENAME"
     "$PROMPT_AUTOMATIONS"
     "$PROMPT_FIX"
@@ -110,7 +115,7 @@ draw_menu() {
         printf '       %s%s%s\n\n' "$desc_color" "${DESCRIPTIONS[$i]}" "$RESET"
     done
 
-    printf '  %s%s↑↓%s%s navighează    %s%s1-4%s%s salt rapid    %s%sEnter%s%s pornește    %s%sQ / Esc%s%s părăsește%s\n' \
+    printf '  %s%s↑↓%s%s navighează    %s%s1-5%s%s salt rapid    %s%sEnter%s%s pornește    %s%sQ / Esc%s%s părăsește%s\n' \
         "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
         "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
         "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
@@ -189,7 +194,7 @@ main() {
                 printf '\033[H\033[J'
                 exit 0
                 ;;
-            [1-4])
+            [1-5])
                 SELECTED=$((10#$key - 1))
                 render
                 sleep 0.1

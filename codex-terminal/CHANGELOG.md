@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.7
+
+### Features
+
+- New task picker entry "Am adăugat un dispozitiv nou" — a welcome prompt that tells Codex one or more new devices were added, asks the user which device(s) before doing anything, then renames just those devices and their entities to convention (`[Cameră] Producător Model [#N]`, per-entity `friendly_name`, label, `entity_id` cleanup) and records them in `inventory.yaml`. Menu navigation hint and quick-jump keys updated from `1-4` to `1-5`.
+
 ## 1.0.6
 
 ### UX

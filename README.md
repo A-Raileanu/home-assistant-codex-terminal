@@ -93,18 +93,21 @@ Cu `auto_launch_codex: true` (default), la fiecare deschidere de sidebar Codex T
   Ce vrei să faci?
 
   1) Sesiune nouă (Codex pornit fără prompt prestabilit)
-  2) Redenumește device-urile și entitățile conform convenției
+  2) Am adăugat un dispozitiv nou
+     (te întreabă ce dispozitiv ai adăugat, apoi îl redenumește pe el și entitățile lui)
+  3) Redenumește device-urile și entitățile conform convenției
      (ignoră ce respectă deja convenția)
-  3) Ajustează automatizările conform convențiilor
+  4) Ajustează automatizările conform convențiilor
      (alias, mode, description, trigger IDs — ignoră ce e deja OK)
-  4) Repară automatizările și dashboard-urile cu entități declarate greșit
+  5) Repară automatizările și dashboard-urile cu entități declarate greșit
      (entity_id-uri inexistente, referințe moarte, integrări vechi)
 
-  Apasă [1-4] (default: 1):
+  Apasă [1-5] (default: 1):
 ```
 
 - **Opțiunea 1** lansează Codex normal, fără mesaj inițial — alege asta pentru conversații libere.
-- **Opțiunile 2–4** pornesc Codex cu un prompt pre-completat care declanșează direct workflow-ul (citește skill-urile relevante, aplică convențiile, folosește `ha-safe-edit`, raportează ce a schimbat).
+- **Opțiunea 2** te întreabă întâi ce dispozitiv (sau dispozitive) tocmai ai adăugat și abia după ce îi dai numele redenumește doar acel device și entitățile lui conform convenției.
+- **Opțiunile 3–5** pornesc Codex cu un prompt pre-completat care declanșează direct workflow-ul (citește skill-urile relevante, aplică convențiile, folosește `ha-safe-edit`, raportează ce a schimbat).
 - Toate trei sunt **idempotente** — sare peste ce respectă deja convenția, deci poți rula opțiunea 2 lunar fără să strice nimic.
 - Dacă există deja o sesiune `tmux` activă (ai închis sidebar-ul și revii), picker-ul e sărit și ești reconectat automat la sesiunea existentă.
 
