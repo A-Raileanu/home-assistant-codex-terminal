@@ -241,20 +241,22 @@ get_codex_launch_command() {
 }
 
 start_web_terminal() {
-    local port=7681
+    local web_port=7681
+    local terminal_port=7682
     local launch_command
     local ttyd_theme
 
     launch_command="$(get_codex_launch_command)"
     export TTYD=1
+    export TTYD_UPSTREAM="http://127.0.0.1:${terminal_port}"
 
     ttyd_theme='{"background":"#101418","foreground":"#d9e2ec","cursor":"#36c2a5","cursorAccent":"#101418","selectionBackground":"#315b7c","selectionForeground":"#ffffff","black":"#0b0f14","red":"#ff6b6b","green":"#8bd450","yellow":"#f5c542","blue":"#4ea1ff","magenta":"#c586f7","cyan":"#36c2a5","white":"#d9e2ec","brightBlack":"#52606d","brightRed":"#ff8787","brightGreen":"#a3e635","brightYellow":"#ffe066","brightBlue":"#74b9ff","brightMagenta":"#d0a2ff","brightCyan":"#5eead4","brightWhite":"#f8fafc"}'
 
-    bashio::log.info "Starting Codex web terminal on port ${port}"
+    bashio::log.info "Starting Codex terminal backend on port ${terminal_port}"
 
-    exec ttyd \
-        --port "$port" \
-        --interface 0.0.0.0 \
+    ttyd \
+        --port "$terminal_port" \
+        --interface 127.0.0.1 \
         --writable \
         --ping-interval 30 \
         --client-option enableReconnect=true \
@@ -262,7 +264,13 @@ start_web_terminal() {
         --client-option reconnectInterval=5 \
         --client-option "theme=${ttyd_theme}" \
         --client-option fontSize=14 \
-        bash -lc "$launch_command"
+        bash -lc "$launch_command" &
+
+    local ttyd_pid=$!
+    trap 'kill "$ttyd_pid" 2>/dev/null || true' EXIT INT TERM
+
+    bashio::log.info "Starting Codex dashboard on port ${web_port}"
+    python3 /opt/scripts/web-ui.py
 }
 
 main() {

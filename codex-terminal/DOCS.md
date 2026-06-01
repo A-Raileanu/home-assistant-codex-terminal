@@ -18,13 +18,13 @@ La fiecare deschidere a sidebar-ului vei vedea un **task picker** care îți ofe
 
 ## Caracteristici
 
-- **Codex CLI interactiv** într-un terminal browser modern (`ttyd`).
+- **Dashboard ingress cu terminal complet** — status, acțiuni rapide și terminal `ttyd` integrat.
 - **Autentificare persistentă** — salvată în `/data/.codex`, supraviețuiește restart-urilor.
 - **Sesiuni `tmux`** — închizi sidebar-ul, revii la aceeași conversație.
-- **Context Home Assistant** generat automat, refresh la 30 minute.
+- **Context Home Assistant** generat automat în Markdown și JSON structurat, refresh la 30 minute.
 - **Skill-uri specializate** pentru HA (entități, dispozitive, automatizări, scripturi, scene, dashboards, template-uri, notificări, refactoring) cu convenții în română.
 - **MCP integrat** — `ha-mcp` community sau endpoint-ul oficial Home Assistant MCP Server.
-- **Editare sigură** prin `ha-safe-edit` (backup + validare YAML + `check_config`).
+- **Editare sigură staged** prin `ha-safe-edit plan/apply` (backup + diff + validare YAML + `check_config`).
 - **Client WebSocket** (`websocat`) pentru API-ul Home Assistant WebSocket.
 - **Pachete persistente** Alpine/pip care se reinstalează la fiecare start.
 - **Full permissions activate by default** — Codex nu cere aprobare la fiecare acțiune.
@@ -39,12 +39,16 @@ codex mcp list                     # listează serverele MCP înregistrate
 
 codex-ha doctor                    # diagnostic: binare, HA API, MCP, skill-uri, safety
 codex-ha check-config              # validează configurarea Home Assistant
+codex-ha context-json              # listează contextul structurat JSON
+codex-ha plans                     # listează planurile staged ha-safe-edit
 codex-ha logs <addon_slug>         # ultimele linii de log ale unui add-on
 
 ha-context                         # refresh contextul HA (respectă cache-ul)
 ha-context --force                 # refresh forțat, ignoră cache-ul
 
 ha-safe-edit check                 # validează YAML + check_config înainte de edit
+ha-safe-edit plan /config/automations.yaml -- sh -c 'comanda-ta'
+ha-safe-edit apply <plan_id>
 ha-safe-edit backup /config/automations.yaml
 
 persist-install list               # listează pachetele persistente
@@ -112,10 +116,11 @@ Folosește `ha-safe-edit` ori de câte ori modifici fișiere din `/config`:
 ```bash
 ha-safe-edit backup /config/configuration.yaml
 ha-safe-edit check /config/configuration.yaml
-ha-safe-edit /config/automations.yaml -- sh -c 'comanda-ta'
+ha-safe-edit plan /config/automations.yaml -- sh -c 'comanda-ta'
+ha-safe-edit apply <plan_id>
 ```
 
-Backup-urile se salvează în `/data/safe-edit-backups` și sunt șterse automat după `safe_edit_backup_retention_days` zile (default 30).
+Planurile staged se salvează în `/data/safe-edit-plans`. Backup-urile se salvează în `/data/safe-edit-backups` și sunt șterse automat după `safe_edit_backup_retention_days` zile (default 30).
 
 ## Securitate
 

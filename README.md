@@ -21,17 +21,17 @@ Add-on-ul pornește în `/config`, deci Codex lucrează direct cu fișierele tal
 ## Caracteristici principale
 
 - **Acces din sidebar** prin Home Assistant ingress (nu trebuie port forward sau autentificare separată).
-- **Codex CLI interactiv** într-un terminal browser modern (`ttyd`).
+- **Dashboard ingress + terminal complet** — pagina din sidebar arată status, acțiuni rapide și terminalul `ttyd` integrat.
 - **Persistență completă** — autentificarea și configurarea Codex stau în `/data/.codex`, supraviețuiesc restart-urilor și update-urilor de add-on.
 - **Sesiuni `tmux`** — închizi sidebar-ul și revii la aceeași conversație, fără să pierzi contextul.
-- **Context Home Assistant generat automat** în `$CODEX_HOME/AGENTS.md`: sistem, entități, integrări, automatizări, scripturi, scene, repairs, recorder, erori recente, logs add-on-uri.
+- **Context Home Assistant generat automat** în `$CODEX_HOME/AGENTS.md` și `/data/ha-context/*.json`: sistem, entități, registries, integrări, automatizări, scripturi, scene, repairs, recorder, erori recente, logs add-on-uri.
 - **Cache cu refresh la 30 minute** (configurabil) — nu regenerează contextul inutil.
 - **Skill-uri Home Assistant integrate (în română):**
   - `home-assistant` — umbrella skill cu index de rutare și fișiere pe topic (entități, devices/areas, automatizări, scripturi, helpers/scene, dashboards, template-uri, notificări, device control, refactoring, exemple) plus `inventory.yaml` ca sursă de adevăr.
   - `home-assistant-instance` — generat automat la fiecare boot de `ha-context`, conține flag-urile de runtime și safety ale instalării tale.
 - **Integrare MCP opțională** (`ha-mcp` community, server oficial HA MCP, ambele, sau dezactivat).
 - **Diagnostic** prin `codex-ha doctor`.
-- **Editare sigură** cu `ha-safe-edit` (backup automat + validare YAML + `check_config`).
+- **Editare sigură staged** cu `ha-safe-edit plan/apply` (backup automat + diff + validare YAML + `check_config` înainte de aplicare).
 - **Client WebSocket bundlat** (`websocat`) pentru `ws://supervisor/core/api/websocket`.
 - **Pachete persistente** APK și pip configurate o singură dată, reinstalate la fiecare start.
 - **Full permissions activate by default** — Codex nu mai cere aprobare la fiecare acțiune (configurabil).
@@ -124,6 +124,8 @@ codex mcp list                     # listează serverele MCP înregistrate
 codex-ha doctor                    # diagnostic complet (binare, HA API, MCP, skills, safety)
 codex-ha safety                    # afișează opțiunile de safety active
 codex-ha check-config              # rulează check_config pe Home Assistant
+codex-ha context-json              # listează contextul structurat JSON
+codex-ha plans                     # listează planurile staged ha-safe-edit
 codex-ha logs <addon_slug>         # ultimele linii de log ale unui add-on
 
 ha-context                         # refresh contextul HA (respectă cache-ul)
@@ -131,6 +133,9 @@ ha-context --force                 # refresh forțat, ignoră cache-ul
 ha-context --full --force          # context detaliat, refresh forțat
 
 ha-safe-edit check                 # validează YAML + check_config înainte de edit
+ha-safe-edit plan /config/automations.yaml -- sh -c 'your-edit-command'
+ha-safe-edit apply <plan_id>       # aplică un plan staged după confirmare
+ha-safe-edit list-plans            # listează planurile staged
 ha-safe-edit backup /config/automations.yaml
 
 persist-install list               # listează pachetele persistente
@@ -332,7 +337,7 @@ ha-context --force
 
 ## Editare sigură (`ha-safe-edit`)
 
-Folosește `ha-safe-edit` ori de câte ori modifici fișiere din `/config`. Creează backup, validează YAML și rulează `check_config` pe Home Assistant.
+Folosește `ha-safe-edit plan/apply` ori de câte ori modifici fișiere din `/config`. `plan` creează backup, rulează comanda, validează YAML + `check_config`, salvează diff-ul în `/data/safe-edit-plans` și restaurează fișierul original. `apply` aplică doar planul aprobat și refuză dacă fișierul s-a schimbat între timp.
 
 ```bash
 # Backup explicit
@@ -341,7 +346,13 @@ ha-safe-edit backup /config/configuration.yaml
 # Validare (YAML + check_config) — folosit înainte de orice edit
 ha-safe-edit check /config/configuration.yaml
 
-# Rulează o comandă de edit cu backup automat și validare după
+# Pregătește un plan staged, cu diff și validare
+ha-safe-edit plan /config/automations.yaml -- sh -c 'your-edit-command'
+
+# Aplică planul după ce ai verificat diff-ul
+ha-safe-edit apply <plan_id>
+
+# Compatibilitate: aplicare directă cu backup + validare
 ha-safe-edit /config/automations.yaml -- sh -c 'your-edit-command'
 ```
 
@@ -349,6 +360,12 @@ Backup-urile se salvează în:
 
 ```text
 /data/safe-edit-backups
+```
+
+Planurile staged se salvează în:
+
+```text
+/data/safe-edit-plans
 ```
 
 Sunt curățate automat după `safe_edit_backup_retention_days` zile (default 30).
@@ -554,14 +571,15 @@ codex-terminal/
   config.yaml                                    # schema opțiunilor + metadata add-on
   build.yaml                                     # imagini de bază pe arhitectură
   Dockerfile                                     # build instructions (apk install, Codex CLI, etc.)
-  run.sh                                         # entrypoint: init env, install skills, start ttyd
+  run.sh                                         # entrypoint: init env, install skills, start ttyd + dashboard
   CHANGELOG.md                                   # istoric versiuni
   DOCS.md                                        # documentație internă add-on
   scripts/
     codex-ha.sh                                  # diagnostic: doctor / safety / check-config / logs
     codex-task-picker.sh                         # task picker afișat la deschiderea sidebar-ului
-    ha-context.sh                                # generator AGENTS.md + skill home-assistant-instance
-    ha-safe-edit.sh                              # backup + validare YAML/check_config
+    ha-context.sh                                # generator AGENTS.md + /data/ha-context JSON + skill instance
+    ha-safe-edit.sh                              # plan/apply staged + backup + validare YAML/check_config
+    web-ui.py                                    # dashboard ingress + proxy către terminalul ttyd
     persist-install.sh                           # pachete APK/pip persistente
     setup-ha-mcp.sh                              # registrare servere MCP
     validate-skills.sh                           # validator intern al skill-urilor

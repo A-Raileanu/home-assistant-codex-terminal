@@ -5,9 +5,10 @@ set -e
 SUPERVISOR_URL="http://supervisor"
 OUTPUT_FILE="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/home-assistant-instance"
+CONTEXT_JSON_DIR="${CONTEXT_JSON_DIR:-/data/ha-context}"
 MAX_LOG_LINES="${MAX_LOG_LINES:-80}"
 REFRESH_MINUTES="${HA_CONTEXT_REFRESH_MINUTES:-30}"
-OPTIONS_FILE="/data/options.json"
+OPTIONS_FILE="${OPTIONS_FILE:-/data/options.json}"
 CONTEXT_DETAIL_LEVEL="${CONTEXT_DETAIL_LEVEL:-standard}"
 INCLUDE_ADDON_LOGS="${INCLUDE_ADDON_LOGS:-false}"
 FULL_MODE=false
@@ -102,6 +103,28 @@ redact_sensitive() {
 for rx,rep in p:
     d=re.sub(rx,rep,d)
 print(d,end="")'
+}
+
+write_json_payload() {
+    local output="$1"
+    local payload="$2"
+
+    if [ -n "$payload" ] && echo "$payload" | jq -e '.' >/dev/null 2>&1; then
+        echo "$payload" | jq . > "$output"
+    else
+        jq -n --arg error "unavailable" '{error:$error}' > "$output"
+    fi
+}
+
+write_storage_json() {
+    local source="$1"
+    local output="$2"
+
+    if [ -f "$source" ] && jq -e '.' "$source" >/dev/null 2>&1; then
+        jq . "$source" > "$output"
+    else
+        jq -n --arg source "$source" --arg error "missing_or_invalid" '{source:$source,error:$error}' > "$output"
+    fi
 }
 
 context_is_fresh() {
@@ -369,16 +392,18 @@ You are running inside a Home Assistant add-on container.
 
 - `/config` is the mapped Home Assistant configuration directory.
 - `$CODEX_HOME/AGENTS.md` contains generated context for this installation.
+- `/data/ha-context/*.json` contains structured generated context for programmatic analysis.
 - `/data` persists across add-on restarts and updates.
 - `ha-context` refreshes live context.
 - `codex-ha doctor` checks auth, API access, MCP, skills, and safety options.
-- `ha-safe-edit` backs up files and validates YAML/config checks around edits.
+- `ha-safe-edit plan` stages edits with a diff; `ha-safe-edit apply` applies an approved plan.
 
 ## Safety
 
 - Treat this as a live home automation system.
 - Prefer reading and validating before editing.
-- Use `ha-safe-edit` before changing YAML or other `/config` files.
+- Use `ha-safe-edit plan <file> -- <command...>` before changing YAML or other `/config` files.
+- Apply only after user approval with `ha-safe-edit apply <plan_id>`.
 - Always store backups under `/data/safe-edit-backups` (or a subfolder inside it).
 - Do not write backup files next to source files in `/config` (no inline `.bak` files).
 - Keep backup paths in your final response.
@@ -404,6 +429,8 @@ You are running inside a Home Assistant add-on container.
 ha-context
 codex-ha doctor
 ha-safe-edit check
+ha-safe-edit plan /config/automations.yaml -- sh -c 'edit command'
+ha-safe-edit apply <plan_id>
 codex mcp list
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/info
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/api/states
@@ -487,6 +514,90 @@ generate_agents_md() {
     mv "$tmp_file" "$OUTPUT_FILE"
 }
 
+generate_context_json() {
+    local timestamp tmp_dir states addons repairs core_info host_info ha_config config_entries
+    timestamp="$(date -Iseconds)"
+    mkdir -p "$(dirname "$CONTEXT_JSON_DIR")"
+    tmp_dir="$(mktemp -d "$(dirname "$CONTEXT_JSON_DIR")/ha-context.XXXXXX")"
+
+    states="$(ha_api_call "states")"
+    addons="$(api_call "addons")"
+    repairs="$(api_call "resolution/info")"
+    core_info="$(api_call "core/info")"
+    host_info="$(api_call "host/info")"
+    ha_config="$(ha_api_call "config")"
+    config_entries="$(ha_api_call "config/config_entries/entry")"
+
+    jq -n \
+        --arg generated_at "$timestamp" \
+        --arg agents_md "$OUTPUT_FILE" \
+        --arg context_detail_level "$(context_level)" \
+        --arg include_addon_logs "$INCLUDE_ADDON_LOGS" \
+        '{generated_at:$generated_at,agents_md:$agents_md,context_detail_level:$context_detail_level,include_addon_logs:($include_addon_logs == "true"),files:{system:"system.json",entities:"entities.json",entity_summary:"entity_summary.json",entity_registry:"entity_registry.json",device_registry:"device_registry.json",area_registry:"area_registry.json",label_registry:"label_registry.json",addons:"addons.json",integrations:"integrations.json",automations_scripts_scenes:"automations_scripts_scenes.json",unavailable_entities:"unavailable_entities.json",repairs:"repairs.json"}}' \
+        > "${tmp_dir}/manifest.json"
+
+    jq -n \
+        --arg generated_at "$timestamp" \
+        --argjson core "$(echo "$core_info" | jq '. // {}' 2>/dev/null || echo '{}')" \
+        --argjson host "$(echo "$host_info" | jq '. // {}' 2>/dev/null || echo '{}')" \
+        --argjson config "$(echo "$ha_config" | jq '. // {}' 2>/dev/null || echo '{}')" \
+        '{generated_at:$generated_at,core:$core,host:$host,config:{location_name:$config.location_name,time_zone:$config.time_zone,unit_system:$config.unit_system,version:$config.version,components:$config.components}}' \
+        > "${tmp_dir}/system.json"
+
+    write_json_payload "${tmp_dir}/entities.json" "$states"
+    write_json_payload "${tmp_dir}/addons.json" "$addons"
+    write_json_payload "${tmp_dir}/repairs.json" "$repairs"
+
+    write_storage_json "/config/.storage/core.entity_registry" "${tmp_dir}/entity_registry.json"
+    write_storage_json "/config/.storage/core.device_registry" "${tmp_dir}/device_registry.json"
+    write_storage_json "/config/.storage/core.area_registry" "${tmp_dir}/area_registry.json"
+    write_storage_json "/config/.storage/core.label_registry" "${tmp_dir}/label_registry.json"
+
+    if [ -n "$states" ] && echo "$states" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        echo "$states" | jq '
+            {
+                total: length,
+                domains: ([.[].entity_id | split(".")[0]] | group_by(.) | map({domain: .[0], count: length}) | sort_by(.domain)),
+                unavailable_or_unknown_count: ([.[] | select(.state == "unavailable" or .state == "unknown")] | length)
+            }
+        ' > "${tmp_dir}/entity_summary.json"
+
+        echo "$states" | jq '
+            [.[] | select(.entity_id | test("^(automation|script|scene)\\."))
+                | {entity_id, state, friendly_name: .attributes.friendly_name, last_changed, last_updated}]
+        ' > "${tmp_dir}/automations_scripts_scenes.json"
+
+        echo "$states" | jq '
+            [.[] | select(.state == "unavailable" or .state == "unknown")
+                | {entity_id, state, friendly_name: .attributes.friendly_name, last_changed, last_updated}]
+        ' > "${tmp_dir}/unavailable_entities.json"
+    else
+        jq -n '{total:0,domains:[],unavailable_or_unknown_count:0,error:"states_unavailable"}' > "${tmp_dir}/entity_summary.json"
+        jq -n '[]' > "${tmp_dir}/automations_scripts_scenes.json"
+        jq -n '[]' > "${tmp_dir}/unavailable_entities.json"
+    fi
+
+    if [ -n "$config_entries" ] && echo "$config_entries" | jq -e '.' >/dev/null 2>&1; then
+        echo "$config_entries" | jq '
+            if type == "array" then .
+            elif .data and (.data | type == "array") then .data
+            else [] end
+            | map({entry_id, domain, title, disabled_by, source, state})
+            | sort_by(.domain // "", .title // "")
+        ' > "${tmp_dir}/integrations.json"
+    else
+        jq -n '[]' > "${tmp_dir}/integrations.json"
+    fi
+
+    chmod -R go-rwx "$tmp_dir"
+    rm -rf "${CONTEXT_JSON_DIR}.old"
+    if [ -d "$CONTEXT_JSON_DIR" ]; then
+        mv "$CONTEXT_JSON_DIR" "${CONTEXT_JSON_DIR}.old"
+    fi
+    mv "$tmp_dir" "$CONTEXT_JSON_DIR"
+    rm -rf "${CONTEXT_JSON_DIR}.old"
+}
+
 main() {
     check_prerequisites
     CONTEXT_DETAIL_LEVEL="$(option context_detail_level "$CONTEXT_DETAIL_LEVEL")"
@@ -499,14 +610,16 @@ main() {
 
     write_skill
 
-    if context_is_fresh "$OUTPUT_FILE" "$REFRESH_MINUTES"; then
+    if context_is_fresh "$OUTPUT_FILE" "$REFRESH_MINUTES" && [ -d "$CONTEXT_JSON_DIR" ]; then
         echo "Home Assistant context is fresh; skipping refresh (${OUTPUT_FILE}, refresh window ${REFRESH_MINUTES} minutes)" >&2
         echo "Run 'ha-context --force' to refresh immediately." >&2
         exit 0
     fi
 
     generate_agents_md
+    generate_context_json
     echo "Home Assistant context written to ${OUTPUT_FILE}" >&2
+    echo "Structured Home Assistant context written to ${CONTEXT_JSON_DIR}" >&2
     echo "Home Assistant instance skill written to ${SKILL_DIR}/SKILL.md" >&2
 }
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0
+
+### Features
+
+- Add an ingress dashboard in front of the terminal. The page shows Codex/auth/tmux/context status, quick actions (`doctor`, context refresh, config check, MCP list, staged edit plans), startup logs, and keeps the full `ttyd` terminal embedded through a local proxy.
+- Add staged safe edits: `ha-safe-edit plan <file> -- <command...>` creates a backup, runs the edit, validates YAML and `check_config`, stores a diff under `/data/safe-edit-plans`, restores the original file, and prints an apply command. `ha-safe-edit apply <plan_id>` applies only if the target file has not changed since the plan was created.
+- Generate structured Home Assistant context in `/data/ha-context/*.json` alongside `$CODEX_HOME/AGENTS.md`, including entity states, entity/device/area/label registries, add-ons, integration summaries, automations/scripts/scenes, unavailable entities, repairs, and a manifest.
+- Upgrade the bundled Codex CLI from `0.134.0` to `0.136.0`.
+
+### UX
+
+- Update task picker prompts and Home Assistant skills to prefer `ha-safe-edit plan/apply` for `/config` writes.
+- Add `codex-ha context-json` and `codex-ha plans` helper commands.
+
 ## 1.0.8
 
 ### UX

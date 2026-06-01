@@ -1,6 +1,7 @@
 name: Build & Smoke Test
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
@@ -12,10 +13,18 @@ on:
       - "codex-terminal/**"
       - ".github/workflows/build-test.yml"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: build-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint Dockerfile
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
@@ -27,6 +36,7 @@ jobs:
   build:
     name: Build (${{ matrix.arch }})
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -51,6 +61,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build container
+        if: github.event_name != 'push'
         uses: docker/build-push-action@v6
         with:
           context: ./codex-terminal
@@ -60,6 +71,21 @@ jobs:
           tags: test/codex-terminal:${{ matrix.arch }}
           build-args: |
             BUILD_FROM=${{ matrix.build_from }}
+          cache-from: type=gha,scope=codex-terminal-${{ matrix.arch }}
+
+      - name: Build container and update cache
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./codex-terminal
+          push: false
+          load: ${{ matrix.arch == 'amd64' }}
+          platforms: ${{ matrix.platform }}
+          tags: test/codex-terminal:${{ matrix.arch }}
+          build-args: |
+            BUILD_FROM=${{ matrix.build_from }}
+          cache-from: type=gha,scope=codex-terminal-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=codex-terminal-${{ matrix.arch }}
 
       - name: Smoke test - image runs
         if: matrix.arch == 'amd64'
@@ -70,7 +96,15 @@ jobs:
         if: matrix.arch == 'amd64'
         run: |
           docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c '
-            for script in /run.sh /opt/scripts/codex-session-picker.sh /opt/scripts/codex-ha.sh /opt/scripts/ha-safe-edit.sh /opt/scripts/setup-ha-mcp.sh /opt/scripts/validate-skills.sh /opt/scripts/health-check.sh /opt/scripts/welcome.sh; do
+            for script in \
+              /run.sh \
+              /opt/scripts/codex-ha.sh \
+              /opt/scripts/codex-task-picker.sh \
+              /opt/scripts/ha-context.sh \
+              /opt/scripts/ha-safe-edit.sh \
+              /opt/scripts/persist-install.sh \
+              /opt/scripts/setup-ha-mcp.sh \
+              /opt/scripts/validate-skills.sh; do
               if [ ! -x "$script" ]; then
                 echo "FAIL: $script is not executable"
                 exit 1

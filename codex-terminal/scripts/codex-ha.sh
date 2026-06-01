@@ -59,6 +59,19 @@ show_safety() {
     echo "- ha_context_refresh_minutes: $(option ha_context_refresh_minutes 30)"
 }
 
+show_context_json() {
+    local context_dir="${CONTEXT_JSON_DIR:-/data/ha-context}"
+
+    if [ ! -d "$context_dir" ]; then
+        echo "Structured context not found at ${context_dir}"
+        echo "Run: ha-context --force"
+        exit 1
+    fi
+
+    echo "Structured context: ${context_dir}"
+    find "$context_dir" -maxdepth 1 -type f -name "*.json" -print | sort
+}
+
 doctor() {
     local failed=0
 
@@ -145,9 +158,11 @@ Usage: codex-ha <command>
 Commands:
   doctor        Check Codex, HA API, MCP, skills, and safety options
   context       Regenerate Home Assistant context (pass --force to bypass cache)
+  context-json  List structured JSON context files
   check-config  Run Home Assistant configuration check
   mcp           List Codex MCP servers
   safety        Print safety options
+  plans         List staged ha-safe-edit plans
   logs SLUG     Print add-on logs for SLUG
 USAGE
 }
@@ -158,9 +173,11 @@ shift || true
 case "$command" in
     doctor) doctor "$@" ;;
     context) ha-context "$@" ;;
+    context-json) show_context_json ;;
     check-config) check_config ;;
     mcp) codex mcp list ;;
     safety) show_safety ;;
+    plans) ha-safe-edit list-plans ;;
     logs) show_logs "$@" ;;
     help|--help|-h) usage ;;
     *) echo "Unknown command: $command" >&2; usage; exit 1 ;;
