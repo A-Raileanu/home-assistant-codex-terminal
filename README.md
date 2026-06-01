@@ -34,7 +34,7 @@ Add-on-ul pornește în `/config`, deci Codex lucrează direct cu fișierele tal
 - **Editare sigură staged** cu `ha-safe-edit plan/apply` (backup automat + diff + validare YAML + `check_config` înainte de aplicare).
 - **Client WebSocket bundlat** (`websocat`) pentru `ws://supervisor/core/api/websocket`.
 - **Pachete persistente** APK și pip configurate o singură dată, reinstalate la fiecare start.
-- **Full permissions activate by default** — Codex nu mai cere aprobare la fiecare acțiune (configurabil).
+- **Permisiuni automate activate implicit** — Codex nu mai cere aprobare la fiecare acțiune (configurabil).
 
 ## Cerințe
 
@@ -101,15 +101,18 @@ Cu `auto_launch_codex: true` (default), la fiecare deschidere de sidebar Codex T
      (alias, mode, description, trigger IDs — ignoră ce e deja OK)
   5) Repară automatizările și dashboard-urile cu entități declarate greșit
      (entity_id-uri inexistente, referințe moarte, integrări vechi)
+  6) Repornește terminalul
+     (închide conversația Codex curentă și afișează din nou meniul)
 
-  Apasă [1-5] (default: 1):
+  Apasă [1-6] (default: 1):
 ```
 
 - **Opțiunea 1** lansează Codex normal, fără mesaj inițial — alege asta pentru conversații libere.
 - **Opțiunea 2** te întreabă întâi ce dispozitiv (sau dispozitive) tocmai ai adăugat, apoi îți arată un sumar cu modificările propuse pentru acel device și entitățile lui și așteaptă confirmarea ta înainte să scrie ceva pe `/config`.
-- **Opțiunile 3–5** pornesc Codex cu un prompt pre-completat care citește skill-urile relevante și pregătește modificările conform convențiilor. Înainte de a scrie pe `/config`, Codex îți afișează un sumar cu tot ce vrea să schimbe și te întreabă dacă să aplice așa sau vrei să ajustezi ceva — aplică (cu `ha-safe-edit`) și raportează doar după confirmarea ta.
+- **Opțiunile 3–5** pornesc Codex cu un prompt pre-completat care citește skill-urile relevante și pregătește modificările conform convențiilor. Înainte de a scrie pe `/config`, Codex îți afișează un sumar cu tot ce vrea să schimbe și te întreabă dacă să pregătească planul tehnic. Aplică doar după confirmarea ta finală.
+- **Opțiunea 6** închide sesiunea Codex curentă și afișează din nou meniul de început.
 - Toate trei sunt **idempotente** — sare peste ce respectă deja convenția, deci poți rula opțiunea 2 lunar fără să strice nimic.
-- Dacă există deja o sesiune `tmux` activă (ai închis sidebar-ul și revii), picker-ul e sărit și ești reconectat automat la sesiunea existentă.
+- Dacă există deja o sesiune activă (ai închis sidebar-ul și revii), meniul îți arată două opțiuni simple: continui conversația existentă sau repornești terminalul.
 
 Pentru a sări complet peste picker și a primi shell-ul direct, setează `auto_launch_codex: false` în opțiunile add-on-ului. Vei intra în `bash`; pornește manual Codex cu `codex --cd /config`.
 
@@ -125,7 +128,6 @@ codex-ha doctor                    # diagnostic complet (binare, HA API, MCP, sk
 codex-ha safety                    # afișează opțiunile de safety active
 codex-ha check-config              # rulează check_config pe Home Assistant
 codex-ha context-json              # listează contextul structurat JSON
-codex-ha plans                     # listează planurile staged ha-safe-edit
 codex-ha logs <addon_slug>         # ultimele linii de log ale unui add-on
 
 ha-context                         # refresh contextul HA (respectă cache-ul)
@@ -135,7 +137,6 @@ ha-context --full --force          # context detaliat, refresh forțat
 ha-safe-edit check                 # validează YAML + check_config înainte de edit
 ha-safe-edit plan /config/automations.yaml -- sh -c 'your-edit-command'
 ha-safe-edit apply <plan_id>       # aplică un plan staged după confirmare
-ha-safe-edit list-plans            # listează planurile staged
 ha-safe-edit backup /config/automations.yaml
 
 persist-install list               # listează pachetele persistente

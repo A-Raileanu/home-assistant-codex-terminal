@@ -44,6 +44,7 @@ TITLES=(
     "Redenumește dispozitivele și senzorii"
     "Ajustează automatizările"
     "Repară referințele sparte"
+    "Repornește terminalul"
 )
 DESCRIPTIONS=(
     "Pornește o conversație liberă cu Codex despre Home Assistant."
@@ -51,6 +52,7 @@ DESCRIPTIONS=(
     "Pune nume clare pe toate dispozitivele și senzorii. Sare peste ce arată deja bine."
     "Face ordine în automatizările tale. Sare peste cele care arată deja bine."
     "Caută în automatizări și dashboard-uri trimiterile spre dispozitive care nu mai există și le repară."
+    "Închide conversația Codex curentă și afișează din nou acest meniu."
 )
 PROMPTS=(
     ""
@@ -58,10 +60,12 @@ PROMPTS=(
     "$PROMPT_RENAME"
     "$PROMPT_AUTOMATIONS"
     "$PROMPT_FIX"
+    "__RESTART__"
 )
 
 COUNT=${#TITLES[@]}
 SELECTED=0
+SESSION_STATE="nouă"
 
 ADDON_VER="$(cat /opt/scripts/addon-version 2>/dev/null || echo '?.?.?')"
 CODEX_VER="$(codex --version 2>/dev/null | awk '{print $NF}' || echo 'n/a')"
@@ -86,16 +90,16 @@ draw_status() {
     if [ "$FULL_PERMS" = "true" ]; then
         perms_marker="$DOT"
         perms_color="$GREEN"
-        perms_label="Full permissions: ON"
+        perms_label="Permisiuni automate: pornite"
     else
         perms_marker="$DOT"
         perms_color="$YELLOW"
-        perms_label="Full permissions: OFF (Codex va cere aprobare)"
+        perms_label="Permisiuni automate: oprite (Codex va cere aprobare)"
     fi
-    printf '\n  %s%s%s %s%s%s     %s%s%s %sSesiune tmux: %scodex%s%s (nouă)%s\n' \
+    printf '\n  %s%s%s %s%s%s     %s%s%s %sSesiune terminal: %scodex%s%s (%s)%s\n' \
         "$perms_color" "$perms_marker" "$RESET" \
         "$DIM$GREY" "$perms_label" "$RESET" \
-        "$ACCENT_DIM" "$DOT" "$RESET" "$DIM$GREY" "$BOLD$WHITE" "$RESET" "$DIM$GREY" "$RESET"
+        "$ACCENT_DIM" "$DOT" "$RESET" "$DIM$GREY" "$BOLD$WHITE" "$RESET" "$DIM$GREY" "$SESSION_STATE" "$RESET"
 }
 
 draw_menu() {
@@ -119,9 +123,9 @@ draw_menu() {
         printf '       %s%s%s\n\n' "$desc_color" "${DESCRIPTIONS[$i]}" "$RESET"
     done
 
-    printf '  %s%s↑↓%s%s navighează    %s%s1-5%s%s salt rapid    %s%sEnter%s%s pornește    %s%sQ / Esc%s%s părăsește%s\n' \
+    printf '  %s%s↑↓%s%s navighează    %s%s1-%d%s%s salt rapid    %s%sEnter%s%s pornește    %s%sQ / Esc%s%s părăsește%s\n' \
         "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
-        "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
+        "$BOLD" "$ACCENT" "$COUNT" "$RESET" "${DIM}${GREY}" \
         "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
         "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" "$RESET"
 }
@@ -144,6 +148,17 @@ show_launching() {
 launch_with_prompt() {
     local prompt="$1"
     local cmd
+
+    case "$prompt" in
+        "__ATTACH__")
+            cleanup_term
+            exec tmux attach-session -t "$TMUX_SESSION_NAME"
+            ;;
+        "__RESTART__")
+            restart_terminal
+            ;;
+    esac
+
     cleanup_term
     if [ -n "$prompt" ]; then
         cmd="${CODEX_BASE_COMMAND} $(printf '%q' "$prompt")"
@@ -154,10 +169,37 @@ launch_with_prompt() {
     exec tmux new-session -s "$TMUX_SESSION_NAME" "$cmd"
 }
 
-main() {
+restart_terminal() {
+    cleanup_term
+    printf '\033[H\033[J'
+    printf '\n  %s%sRepornește terminalul...%s\n\n' "$BOLD" "$WHITE" "$RESET"
+    tmux kill-session -t "$TMUX_SESSION_NAME" 2>/dev/null || true
+    exec "$0"
+}
+
+configure_menu() {
     if tmux has-session -t "$TMUX_SESSION_NAME" 2>/dev/null; then
-        exec tmux attach-session -t "$TMUX_SESSION_NAME"
+        TITLES=(
+            "Continuă sesiunea deschisă"
+            "Repornește terminalul"
+        )
+        DESCRIPTIONS=(
+            "Revii la conversația Codex care este deja pornită."
+            "Închide conversația Codex curentă și afișează meniul de început."
+        )
+        PROMPTS=(
+            "__ATTACH__"
+            "__RESTART__"
+        )
+        COUNT=${#TITLES[@]}
+        SESSION_STATE="activă"
+    else
+        SESSION_STATE="nouă"
     fi
+}
+
+main() {
+    configure_menu
 
     printf '\033[?25l'                                  # hide cursor
     stty -echo -icanon time 0 min 1 2>/dev/null || true
@@ -198,11 +240,13 @@ main() {
                 printf '\033[H\033[J'
                 exit 0
                 ;;
-            [1-5])
-                SELECTED=$((10#$key - 1))
-                render
-                sleep 0.1
-                launch_with_prompt "${PROMPTS[$SELECTED]}"
+            [1-9])
+                if [ "$key" -ge 1 ] && [ "$key" -le "$COUNT" ]; then
+                    SELECTED=$((10#$key - 1))
+                    render
+                    sleep 0.1
+                    launch_with_prompt "${PROMPTS[$SELECTED]}"
+                fi
                 ;;
         esac
     done

@@ -102,11 +102,24 @@ async def action(request: web.Request) -> web.Response:
         "refresh-context": (("ha-context", "--force"), 180),
         "check-config": (("ha-safe-edit", "check"), 120),
         "mcp-list": (("codex", "mcp", "list"), 60),
-        "list-plans": (("ha-safe-edit", "list-plans"), 30),
     }
 
+    if name == "restart-terminal":
+        exists = await run_command("tmux", "has-session", "-t", "codex", timeout=5)
+        if not exists["ok"]:
+            return web.json_response({
+                "ok": True,
+                "returncode": 0,
+                "output": "Nu există o sesiune Codex activă de repornit. La următoarea deschidere se va afișa meniul de început.",
+                "duration_ms": exists["duration_ms"],
+            })
+        result = await run_command("tmux", "kill-session", "-t", "codex", timeout=10)
+        if result["ok"]:
+            result["output"] = "Sesiunea Codex a fost oprită. Terminalul se reconectează și va afișa meniul de început."
+        return web.json_response(result)
+
     if name not in commands:
-        return web.json_response({"ok": False, "output": f"Unknown action: {name}"}, status=404)
+        return web.json_response({"ok": False, "output": f"Acțiune necunoscută: {name}"}, status=404)
 
     args, timeout = commands[name]
     result = await run_command(*args, timeout=timeout)
@@ -181,7 +194,7 @@ HTML = r"""<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Codex Terminal</title>
+  <title>Terminal Codex</title>
   <style>
     :root {
       color-scheme: dark;
@@ -196,12 +209,18 @@ HTML = r"""<!doctype html>
       --shadow: rgba(0, 0, 0, .25);
     }
     * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.45;
+      display: flex;
+      flex-direction: column;
     }
     header {
       display: flex;
@@ -211,27 +230,31 @@ HTML = r"""<!doctype html>
       padding: 16px 18px;
       border-bottom: 1px solid var(--border);
       background: #0f1317;
+      flex: 0 0 auto;
     }
     h1 { margin: 0; font-size: 18px; letter-spacing: 0; }
     main {
       display: grid;
       grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-      min-height: calc(100vh - 58px);
+      flex: 1 1 auto;
+      min-height: 0;
     }
     aside {
       padding: 14px;
       border-right: 1px solid var(--border);
       background: var(--panel);
       overflow: auto;
+      min-height: 0;
     }
     section.terminal {
-      min-height: calc(100vh - 58px);
       background: #101418;
+      min-height: 0;
+      overflow: hidden;
     }
     iframe {
       width: 100%;
       height: 100%;
-      min-height: calc(100vh - 58px);
+      min-height: 0;
       border: 0;
       display: block;
     }
@@ -279,9 +302,19 @@ HTML = r"""<!doctype html>
       text-decoration: none;
       cursor: pointer;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
     }
     button:hover, a.button:hover { border-color: var(--accent); }
     button:disabled { opacity: .55; cursor: wait; }
+    .action-title { font-weight: 650; }
+    .action-desc {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
     .panel {
       padding: 12px;
       margin-top: 12px;
@@ -305,7 +338,8 @@ HTML = r"""<!doctype html>
       overflow-wrap: anywhere;
     }
     @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
+      body { overflow: auto; }
+      main { grid-template-columns: 1fr; min-height: auto; }
       aside { border-right: 0; border-bottom: 1px solid var(--border); }
       section.terminal, iframe { min-height: 70vh; }
     }
@@ -313,33 +347,53 @@ HTML = r"""<!doctype html>
 </head>
 <body>
   <header>
-    <h1>Codex Terminal</h1>
-    <a class="button" href="#" data-terminal-link target="_blank" rel="noreferrer">Terminal full screen</a>
+    <h1>Terminal Codex</h1>
+    <a class="button" href="#" data-terminal-link target="_blank" rel="noreferrer">
+      <span class="action-title">Terminal pe tot ecranul</span>
+    </a>
   </header>
   <main>
     <aside>
       <div class="status-grid">
-        <div class="status-row"><span class="label">Codex</span><span id="codex" class="value">...</span></div>
-        <div class="status-row"><span class="label">Auth</span><span id="auth" class="value">...</span></div>
-        <div class="status-row"><span class="label">tmux</span><span id="tmux" class="value">...</span></div>
-        <div class="status-row"><span class="label">Context JSON</span><span id="context" class="value">...</span></div>
-        <div class="status-row"><span class="label">Full permissions</span><span id="perms" class="value">...</span></div>
+        <div class="status-row"><span class="label">Versiune Codex</span><span id="codex" class="value">...</span></div>
+        <div class="status-row"><span class="label">Autentificare</span><span id="auth" class="value">...</span></div>
+        <div class="status-row"><span class="label">Sesiune terminal</span><span id="tmux" class="value">...</span></div>
+        <div class="status-row"><span class="label">Context Home Assistant</span><span id="context" class="value">...</span></div>
+        <div class="status-row"><span class="label">Permisiuni automate</span><span id="perms" class="value">...</span></div>
       </div>
       <div class="actions">
-        <button data-action="doctor">Doctor</button>
-        <button data-action="refresh-context">Refresh context</button>
-        <button data-action="check-config">Check config</button>
-        <button data-action="mcp-list">MCP list</button>
-        <button data-action="list-plans">Edit plans</button>
-        <a class="button" href="#" data-terminal-link target="_blank" rel="noreferrer">Open terminal</a>
+        <button data-action="doctor">
+          <span class="action-title">Verifică sistemul</span>
+          <span class="action-desc">Codex, API, unelte</span>
+        </button>
+        <button data-action="refresh-context">
+          <span class="action-title">Actualizează contextul</span>
+          <span class="action-desc">Citește datele HA</span>
+        </button>
+        <button data-action="check-config">
+          <span class="action-title">Verifică configurația</span>
+          <span class="action-desc">YAML și check_config</span>
+        </button>
+        <button data-action="mcp-list">
+          <span class="action-title">Verifică integrarea MCP</span>
+          <span class="action-desc">Uneltele HA pentru Codex</span>
+        </button>
+        <button data-action="restart-terminal">
+          <span class="action-title">Repornește terminalul</span>
+          <span class="action-desc">Revine la meniul de început</span>
+        </button>
+        <a class="button" href="#" data-terminal-link target="_blank" rel="noreferrer">
+          <span class="action-title">Deschide terminalul separat</span>
+          <span class="action-desc">Fereastră nouă</span>
+        </a>
       </div>
       <div class="panel">
-        <h2>Output</h2>
-        <pre id="output">Ready.</pre>
+        <h2>Rezultat acțiune</h2>
+        <pre id="output">Alege o acțiune din butoanele de mai sus.</pre>
       </div>
       <div class="panel">
-        <h2>Startup</h2>
-        <pre id="startup">Loading...</pre>
+        <h2>Pornire add-on</h2>
+        <pre id="startup">Se încarcă...</pre>
       </div>
     </aside>
     <section class="terminal">
@@ -366,26 +420,38 @@ HTML = r"""<!doctype html>
       try {
         const res = await fetch(ingressUrl('api/status'));
         const data = await res.json();
-        setText('codex', data.codex_version || 'unavailable', data.codex_version === 'unavailable' ? 'bad' : 'ok');
-        setText('auth', data.codex_auth_present ? 'present' : 'missing', data.codex_auth_present ? 'ok' : 'warn');
-        setText('tmux', data.tmux_session_active ? 'active' : 'new session', data.tmux_session_active ? 'ok' : '');
-        setText('context', data.context.json_context_exists ? 'present' : 'missing', data.context.json_context_exists ? 'ok' : 'warn');
+        setText('codex', data.codex_version || 'indisponibil', data.codex_version === 'unavailable' ? 'bad' : 'ok');
+        setText('auth', data.codex_auth_present ? 'conectat' : 'lipsește', data.codex_auth_present ? 'ok' : 'warn');
+        setText('tmux', data.tmux_session_active ? 'activă' : 'gata de pornire', data.tmux_session_active ? 'ok' : '');
+        setText('context', data.context.json_context_exists ? 'generat' : 'lipsește', data.context.json_context_exists ? 'ok' : 'warn');
         const full = data.options && data.options.codex_full_permissions;
-        setText('perms', full ? 'ON' : 'OFF', full ? 'warn' : 'ok');
-        startup.textContent = data.startup_log || 'No startup log yet.';
+        setText('perms', full ? 'pornite' : 'oprite', full ? 'warn' : 'ok');
+        startup.textContent = data.startup_log || 'Nu există jurnal de pornire încă.';
       } catch (error) {
-        output.textContent = String(error);
+        output.textContent = 'Nu am putut citi starea add-on-ului: ' + String(error);
       }
     }
     async function runAction(name, button) {
+      const labels = {
+        'doctor': 'Verific sistemul',
+        'refresh-context': 'Actualizez contextul Home Assistant',
+        'check-config': 'Verific configurația Home Assistant',
+        'mcp-list': 'Verific integrarea MCP',
+        'restart-terminal': 'Repornesc terminalul'
+      };
       button.disabled = true;
-      output.textContent = 'Running ' + name + '...';
+      output.textContent = (labels[name] || 'Rulez acțiunea') + '...';
       try {
         const res = await fetch(ingressUrl('api/actions/' + name), { method: 'POST' });
         const data = await res.json();
         output.textContent = data.output || JSON.stringify(data, null, 2);
+        if (name === 'restart-terminal') {
+          setTimeout(() => {
+            document.getElementById('terminal-frame').src = terminalUrl;
+          }, 1000);
+        }
       } catch (error) {
-        output.textContent = String(error);
+        output.textContent = 'Acțiunea nu a reușit: ' + String(error);
       } finally {
         button.disabled = false;
         refreshStatus();

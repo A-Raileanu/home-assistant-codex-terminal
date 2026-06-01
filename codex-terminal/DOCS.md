@@ -14,7 +14,7 @@ Codex citește automat starea curentă a HA (versiuni, integrări, automatizări
 4. Deschide **Codex Terminal** din sidebar.
 5. La prima rulare: `codex login` — autentificare cu contul OpenAI. Auth-ul se salvează în `/data/.codex` și persistă peste restart-uri și update-uri.
 
-La fiecare deschidere a sidebar-ului vei vedea un **task picker** care îți oferă patru sarcini comune (sesiune nouă, redenumire dispozitive, ajustare automatizări, reparare referințe sparte). Alegi una și Codex pornește direct cu sarcina respectivă.
+La fiecare deschidere nouă a sidebar-ului vei vedea un **meniu de început** cu sarcini comune: sesiune nouă, dispozitiv nou, redenumire dispozitive, ajustare automatizări, reparare referințe sparte și repornire terminal. Dacă există deja o conversație Codex activă, meniul îți oferă întâi opțiunile simple de continuare sau repornire.
 
 ## Caracteristici
 
@@ -27,7 +27,7 @@ La fiecare deschidere a sidebar-ului vei vedea un **task picker** care îți ofe
 - **Editare sigură staged** prin `ha-safe-edit plan/apply` (backup + diff + validare YAML + `check_config`).
 - **Client WebSocket** (`websocat`) pentru API-ul Home Assistant WebSocket.
 - **Pachete persistente** Alpine/pip care se reinstalează la fiecare start.
-- **Full permissions activate by default** — Codex nu cere aprobare la fiecare acțiune.
+- **Permisiuni automate activate implicit** — Codex nu cere aprobare la fiecare acțiune.
 
 ## Comenzi utile
 
@@ -40,7 +40,6 @@ codex mcp list                     # listează serverele MCP înregistrate
 codex-ha doctor                    # diagnostic: binare, HA API, MCP, skill-uri, safety
 codex-ha check-config              # validează configurarea Home Assistant
 codex-ha context-json              # listează contextul structurat JSON
-codex-ha plans                     # listează planurile staged ha-safe-edit
 codex-ha logs <addon_slug>         # ultimele linii de log ale unui add-on
 
 ha-context                         # refresh contextul HA (respectă cache-ul)

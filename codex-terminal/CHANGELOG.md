@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.3
+
+### Fixes
+
+- Remove the dashboard page scrollbar on desktop so scrolling belongs only to the embedded terminal area.
+
+## 1.1.2
+
+### UX
+
+- Translate the dashboard UI fully into Romanian and make action labels clearer for less experienced Home Assistant users.
+- Remove the visible "Edit plans" dashboard action.
+- Add "Repornește terminalul" to the welcome menu. If a Codex session is already active, the menu now offers "Continuă sesiunea deschisă" or "Repornește terminalul" instead of auto-attaching immediately.
+
 ## 1.1.1
 
 ### Fixes
