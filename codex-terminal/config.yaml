@@ -1,7 +1,7 @@
 ---
 name: "Codex Terminal"
 description: "OpenAI Codex direct din sidebar — generează și depanează automatizări, dashboard-uri și YAML cu un asistent care înțelege instalarea ta de Home Assistant."
-version: "1.1.6"
+version: "1.1.7"
 slug: "codex_terminal"
 init: false
 

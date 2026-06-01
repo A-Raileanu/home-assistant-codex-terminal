@@ -190,7 +190,7 @@ draw_status() {
     printf '  %s%s%s %s%s%s\n' "$perms_color" "$perms_marker" "$RESET" "$GREY" "$perms_label" "$RESET"
     printf '  %s%s%s %sSesiune terminal:%s %scodex%s %s(%s)%s\n' \
         "$session_color" "$DOT" "$RESET" "$GREY" "$RESET" "$BOLD$WHITE" "$RESET" "$DIM$GREY" "$SESSION_STATE" "$RESET"
-    printf '  %s%s%s %sContext:%s se verifică automat la 30 minute%s\n' \
+    printf '  %s%s%s %sContext:%s %sse verifică automat la 30 minute%s\n' \
         "$ACCENT" "$DOT" "$RESET" "$GREY" "$RESET" "$DIM$GREY" "$RESET"
 }
 
@@ -214,11 +214,11 @@ draw_menu_item() {
         border_color="$DARK_GREY"
     fi
 
-    printf '  %s│%s %s%s%s %s%2d%s  %s%-78s%s %s│%s\n' \
+    printf '  %s│%s %s%s%s %s%2d%s  %s%-81s%s%s│%s\n' \
         "$border_color" "$RESET" "$ACCENT" "$marker" "$RESET" \
         "$num_color" "$index" "$RESET" \
         "$title_color" "$title" "$RESET" "$border_color" "$RESET"
-    printf '  %s│%s      %s%-80s%s %s│%s\n' \
+    printf '  %s│%s      %s%-82s%s%s│%s\n' \
         "$border_color" "$RESET" "$desc_color" "$description" "$RESET" "$border_color" "$RESET"
 }
 

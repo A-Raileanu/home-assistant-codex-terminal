@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.7
+
+### Fixes
+
+- Fix terminal welcome layout: remove the duplicated context line and align the right border of menu rows with the frame.
+
 ## 1.1.6
 
 ### UX
