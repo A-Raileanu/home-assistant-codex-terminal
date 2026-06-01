@@ -21,11 +21,11 @@ Add-on-ul pornește în `/config`, deci Codex lucrează direct cu fișierele tal
 ## Caracteristici principale
 
 - **Acces din sidebar** prin Home Assistant ingress (nu trebuie port forward sau autentificare separată).
-- **Dashboard ingress + terminal complet** — pagina din sidebar arată status, acțiuni rapide și terminalul `ttyd` integrat.
+- **Terminal complet în sidebar** — pagina din Home Assistant deschide direct terminalul `ttyd`, fără panouri intermediare.
 - **Persistență completă** — autentificarea și configurarea Codex stau în `/data/.codex`, supraviețuiesc restart-urilor și update-urilor de add-on.
 - **Sesiuni `tmux`** — închizi sidebar-ul și revii la aceeași conversație, fără să pierzi contextul.
 - **Context Home Assistant generat automat** în `$CODEX_HOME/AGENTS.md` și `/data/ha-context/*.json`: sistem, entități, registries, integrări, automatizări, scripturi, scene, repairs, recorder, erori recente, logs add-on-uri.
-- **Cache cu refresh la 30 minute** (configurabil) — nu regenerează contextul inutil.
+- **Refresh automat de context** — se verifică periodic și la deschiderea terminalului; dacă e mai vechi de 30 minute (configurabil), se regenerează.
 - **Skill-uri Home Assistant integrate (în română):**
   - `home-assistant` — umbrella skill cu index de rutare și fișiere pe topic (entități, devices/areas, automatizări, scripturi, helpers/scene, dashboards, template-uri, notificări, device control, refactoring, exemple) plus `inventory.yaml` ca sursă de adevăr.
   - `home-assistant-instance` — generat automat la fiecare boot de `ha-context`, conține flag-urile de runtime și safety ale instalării tale.
@@ -572,7 +572,7 @@ codex-terminal/
   config.yaml                                    # schema opțiunilor + metadata add-on
   build.yaml                                     # imagini de bază pe arhitectură
   Dockerfile                                     # build instructions (apk install, Codex CLI, etc.)
-  run.sh                                         # entrypoint: init env, install skills, start ttyd + dashboard
+  run.sh                                         # entrypoint: init env, install skills, start ttyd + ingress proxy
   CHANGELOG.md                                   # istoric versiuni
   DOCS.md                                        # documentație internă add-on
   scripts/
@@ -580,7 +580,7 @@ codex-terminal/
     codex-task-picker.sh                         # task picker afișat la deschiderea sidebar-ului
     ha-context.sh                                # generator AGENTS.md + /data/ha-context JSON + skill instance
     ha-safe-edit.sh                              # plan/apply staged + backup + validare YAML/check_config
-    web-ui.py                                    # dashboard ingress + proxy către terminalul ttyd
+    web-ui.py                                    # proxy ingress către terminalul ttyd
     persist-install.sh                           # pachete APK/pip persistente
     setup-ha-mcp.sh                              # registrare servere MCP
     validate-skills.sh                           # validator intern al skill-urilor

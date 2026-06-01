@@ -18,12 +18,15 @@ ACCENT=$'\033[38;5;51m'        # bright cyan (matches ttyd theme)
 ACCENT_DIM=$'\033[38;5;38m'    # darker cyan
 GREEN=$'\033[38;5;42m'         # success green
 YELLOW=$'\033[38;5;221m'       # warning yellow
+BLUE=$'\033[38;5;75m'
+PURPLE=$'\033[38;5;141m'
 WHITE=$'\033[38;5;254m'
 GREY=$'\033[38;5;245m'
 DARK_GREY=$'\033[38;5;240m'
 
 ARROW='▶'
 DOT='●'
+BOX_WIDTH=88
 
 # ----- Preset prompts -----
 # Shared confirmation gate appended to every actionable preset: Codex must
@@ -47,12 +50,12 @@ TITLES=(
     "Repornește terminalul"
 )
 DESCRIPTIONS=(
-    "Pornește o conversație liberă cu Codex despre Home Assistant."
-    "Spune-i ce dispozitiv ai adăugat și îl redenumește pe el și senzorii lui conform convenției."
-    "Pune nume clare pe toate dispozitivele și senzorii. Sare peste ce arată deja bine."
-    "Face ordine în automatizările tale. Sare peste cele care arată deja bine."
-    "Caută în automatizări și dashboard-uri trimiterile spre dispozitive care nu mai există și le repară."
-    "Închide conversația Codex curentă și afișează din nou acest meniu."
+    "Conversație liberă despre HA."
+    "Aduci un device nou la convenție."
+    "Curăță numele care nu respectă regula."
+    "Normalizează alias, mode și trigger-e."
+    "Caută entități inexistente în config."
+    "Închide sesiunea și revine la meniu."
 )
 PROMPTS=(
     ""
@@ -71,63 +74,172 @@ ADDON_VER="$(cat /opt/scripts/addon-version 2>/dev/null || echo '?.?.?')"
 CODEX_VER="$(codex --version 2>/dev/null | awk '{print $NF}' || echo 'n/a')"
 FULL_PERMS="${CODEX_HA_FULL_PERMISSIONS:-true}"
 
+refresh_context_if_needed() {
+    local refresh_minutes="${HA_CONTEXT_REFRESH_MINUTES:-30}"
+    local pid frame status_file
+    local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+
+    if command -v ha-context >/dev/null 2>&1; then
+        status_file="/tmp/codex-ha-context-refresh.log"
+        printf '\033[?25l'
+        printf '\033[H\033[J'
+        printf '\n\n'
+        printf '  %s╭────────────────────────────────────────────────────────────╮%s\n' "$ACCENT_DIM" "$RESET"
+        printf '  %s│%s  %s%sPregătesc contextul Home Assistant%s                    %s│%s\n' "$ACCENT_DIM" "$RESET" "$BOLD" "$WHITE" "$RESET" "$ACCENT_DIM" "$RESET"
+        printf '  %s│%s  %sSe regenerează doar dacă este mai vechi de %s minute.%s  %s│%s\n' "$ACCENT_DIM" "$RESET" "$DIM$GREY" "$refresh_minutes" "$RESET" "$ACCENT_DIM" "$RESET"
+        printf '  %s╰────────────────────────────────────────────────────────────╯%s\n\n' "$ACCENT_DIM" "$RESET"
+
+        ha-context --refresh-minutes "$refresh_minutes" >"$status_file" 2>&1 &
+        pid=$!
+        frame=0
+        while kill -0 "$pid" 2>/dev/null; do
+            printf '\r  %s%s%s %sVerific datele instalării tale...%s' \
+                "$ACCENT" "${frames[$((frame % ${#frames[@]}))]}" "$RESET" "$GREY" "$RESET"
+            frame=$((frame + 1))
+            sleep 0.08
+        done
+
+        if wait "$pid"; then
+            printf '\r  %s✓%s %sContext pregătit.%s                         \n' "$GREEN" "$RESET" "$GREY" "$RESET"
+        else
+            printf '\r  %s!%s %sContextul nu a putut fi actualizat acum.%s\n' "$YELLOW" "$RESET" "$GREY" "$RESET"
+        fi
+        sleep 0.35
+    fi
+}
+
 cleanup_term() {
     printf '\033[?25h'
     stty echo icanon 2>/dev/null || true
 }
 trap cleanup_term EXIT INT TERM
 
+repeat_char() {
+    local char="$1"
+    local count="$2"
+    local output=""
+
+    while [ "$count" -gt 0 ]; do
+        output="${output}${char}"
+        count=$((count - 1))
+    done
+
+    printf '%s' "$output"
+}
+
+draw_rule() {
+    local left="$1"
+    local fill="$2"
+    local right="$3"
+
+    printf '  %s%s%s%s%s\n' "$ACCENT_DIM" "$left" "$(repeat_char "$fill" "$BOX_WIDTH")" "$right" "$RESET"
+}
+
+draw_box_text() {
+    local text="$1"
+    local color="${2:-$WHITE}"
+
+    printf '  %s│%s %s%-*s%s %s│%s\n' "$ACCENT_DIM" "$RESET" "$color" "$((BOX_WIDTH - 2))" "$text" "$RESET" "$ACCENT_DIM" "$RESET"
+}
+
+intro_animation() {
+    local i fill rest
+
+    printf '\033[?25l'
+    for ((i = 0; i <= 18; i++)); do
+        fill="$(repeat_char '━' "$i")"
+        rest="$(repeat_char '─' "$((18 - i))")"
+        printf '\033[H\033[J'
+        printf '\n\n'
+        printf '  %s%sCodex Terminal%s\n\n' "$BOLD" "$WHITE" "$RESET"
+        printf '  %s[%s%s%s%s]%s  %sHome Assistant workspace%s\n' \
+            "$DARK_GREY" "$ACCENT" "$fill" "$DARK_GREY" "$rest" "$RESET" "$GREY" "$RESET"
+        sleep 0.025
+    done
+}
+
 draw_banner() {
     printf '\n'
-    printf '  %s▌%s  %s%sCodex Terminal%s %s— Home Assistant Add-on%s\n' \
-        "$ACCENT" "$RESET" "$BOLD" "$ACCENT" "$RESET" "$WHITE" "$RESET"
-    printf '  %s▌%s  %sv%s · codex %s%s\n' \
-        "$ACCENT" "$RESET" "$DIM$GREY" "$ADDON_VER" "$CODEX_VER" "$RESET"
+    draw_rule '╭' '─' '╮'
+    draw_box_text "Codex Terminal pentru Home Assistant" "$BOLD$WHITE"
+    draw_box_text "Automatizări, YAML, dashboard-uri și depanare direct din /config" "$GREY"
+    draw_rule '├' '─' '┤'
+    draw_box_text "Add-on v${ADDON_VER}  ·  Codex ${CODEX_VER}  ·  /config" "$ACCENT"
+    draw_rule '╰' '─' '╯'
 }
 
 draw_status() {
-    local perms_marker perms_color perms_label
+    local perms_marker perms_color perms_label session_color
     if [ "$FULL_PERMS" = "true" ]; then
         perms_marker="$DOT"
-        perms_color="$GREEN"
+        perms_color="$YELLOW"
         perms_label="Permisiuni automate: pornite"
     else
         perms_marker="$DOT"
-        perms_color="$YELLOW"
+        perms_color="$GREEN"
         perms_label="Permisiuni automate: oprite (Codex va cere aprobare)"
     fi
-    printf '\n  %s%s%s %s%s%s     %s%s%s %sSesiune terminal: %scodex%s%s (%s)%s\n' \
-        "$perms_color" "$perms_marker" "$RESET" \
-        "$DIM$GREY" "$perms_label" "$RESET" \
-        "$ACCENT_DIM" "$DOT" "$RESET" "$DIM$GREY" "$BOLD$WHITE" "$RESET" "$DIM$GREY" "$SESSION_STATE" "$RESET"
+
+    if [ "$SESSION_STATE" = "activă" ]; then
+        session_color="$GREEN"
+    else
+        session_color="$BLUE"
+    fi
+
+    printf '\n'
+    printf '  %s%s%s %s%s%s\n' "$perms_color" "$perms_marker" "$RESET" "$GREY" "$perms_label" "$RESET"
+    printf '  %s%s%s %sSesiune terminal:%s %scodex%s %s(%s)%s\n' \
+        "$session_color" "$DOT" "$RESET" "$GREY" "$RESET" "$BOLD$WHITE" "$RESET" "$DIM$GREY" "$SESSION_STATE" "$RESET"
+    printf '  %s%s%s %sContext:%s se verifică automat la 30 minute%s\n' \
+        "$ACCENT" "$DOT" "$RESET" "$GREY" "$RESET" "$DIM$GREY" "$RESET"
+}
+
+draw_menu_item() {
+    local index="$1"
+    local title="$2"
+    local description="$3"
+    local marker num_color title_color desc_color border_color
+
+    if [ "$((index - 1))" -eq "$SELECTED" ]; then
+        marker="${ARROW}"
+        num_color="${BOLD}${ACCENT}"
+        title_color="${BOLD}${WHITE}"
+        desc_color="${ACCENT_DIM}"
+        border_color="$ACCENT"
+    else
+        marker=" "
+        num_color="${DIM}${GREY}"
+        title_color="${WHITE}"
+        desc_color="${DIM}${GREY}"
+        border_color="$DARK_GREY"
+    fi
+
+    printf '  %s│%s %s%s%s %s%2d%s  %s%-78s%s %s│%s\n' \
+        "$border_color" "$RESET" "$ACCENT" "$marker" "$RESET" \
+        "$num_color" "$index" "$RESET" \
+        "$title_color" "$title" "$RESET" "$border_color" "$RESET"
+    printf '  %s│%s      %s%-80s%s %s│%s\n' \
+        "$border_color" "$RESET" "$desc_color" "$description" "$RESET" "$border_color" "$RESET"
+}
+
+draw_footer() {
+    printf '\n'
+    printf '  %s↑↓%s navighează   %s1-%d%s salt rapid   %sEnter%s pornește   %sQ / Esc%s părăsește\n' \
+        "$ACCENT" "$GREY" "$ACCENT" "$COUNT" "$GREY" "$ACCENT" "$GREY" "$ACCENT" "$RESET"
 }
 
 draw_menu() {
-    printf '\n  %s%sSelectează ce vrei să faci:%s\n\n' "$BOLD" "$WHITE" "$RESET"
+    local i
 
-    local i marker num_color title_color desc_color desc_line
+    printf '\n  %s%sAlege o acțiune%s\n' "$BOLD" "$WHITE" "$RESET"
+    printf '  %s┌%s┐%s\n' "$DARK_GREY" "$(repeat_char '─' "$BOX_WIDTH")" "$RESET"
+
     for ((i = 0; i < COUNT; i++)); do
-        if [ "$i" -eq "$SELECTED" ]; then
-            marker="${ACCENT}${BOLD}${ARROW}${RESET}"
-            num_color="${BOLD}${ACCENT}"
-            title_color="${BOLD}${ACCENT}"
-            desc_color="${ACCENT_DIM}"
-        else
-            marker=" "
-            num_color="${DIM}${GREY}"
-            title_color="${WHITE}"
-            desc_color="${DIM}${GREY}"
-        fi
-        printf '  %s  %s%d.%s  %s%s%s\n' \
-            "$marker" "$num_color" "$((i + 1))" "$RESET" "$title_color" "${TITLES[$i]}" "$RESET"
-        printf '       %s%s%s\n\n' "$desc_color" "${DESCRIPTIONS[$i]}" "$RESET"
+        draw_menu_item "$((i + 1))" "${TITLES[$i]}" "${DESCRIPTIONS[$i]}"
     done
 
-    printf '  %s%s↑↓%s%s navighează    %s%s1-%d%s%s salt rapid    %s%sEnter%s%s pornește    %s%sQ / Esc%s%s părăsește%s\n' \
-        "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
-        "$BOLD" "$ACCENT" "$COUNT" "$RESET" "${DIM}${GREY}" \
-        "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" \
-        "$BOLD" "$ACCENT" "$RESET" "${DIM}${GREY}" "$RESET"
+    printf '  %s└%s┘%s\n' "$DARK_GREY" "$(repeat_char '─' "$BOX_WIDTH")" "$RESET"
+    draw_footer
 }
 
 render() {
@@ -184,8 +296,8 @@ configure_menu() {
             "Repornește terminalul"
         )
         DESCRIPTIONS=(
-            "Revii la conversația Codex care este deja pornită."
-            "Închide conversația Codex curentă și afișează meniul de început."
+            "Revii la conversația deja pornită."
+            "Închide sesiunea și revine la meniu."
         )
         PROMPTS=(
             "__ATTACH__"
@@ -199,7 +311,9 @@ configure_menu() {
 }
 
 main() {
+    refresh_context_if_needed
     configure_menu
+    intro_animation
 
     printf '\033[?25l'                                  # hide cursor
     stty -echo -icanon time 0 min 1 2>/dev/null || true

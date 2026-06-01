@@ -2,6 +2,13 @@
 
 set -e
 
+remove_ha_mcp_servers() {
+    if command -v codex >/dev/null 2>&1; then
+        codex mcp remove home-assistant >/dev/null 2>&1 || true
+        codex mcp remove home-assistant-official >/dev/null 2>&1 || true
+    fi
+}
+
 configure_ha_mcp_server() {
     local enable_ha_mcp
     local mcp_mode
@@ -18,26 +25,31 @@ configure_ha_mcp_server() {
 
     if [ "$enable_ha_mcp" != "true" ]; then
         bashio::log.info "Home Assistant MCP integration disabled"
+        remove_ha_mcp_servers
         return 0
     fi
 
     if [ "$mcp_mode" = "disabled" ]; then
         bashio::log.info "MCP mode is disabled"
+        remove_ha_mcp_servers
         return 0
     fi
 
     if [ "$readonly_mode" = "true" ]; then
         bashio::log.info "readonly_mode is enabled; skipping MCP registration"
+        remove_ha_mcp_servers
         return 0
     fi
 
     if [ "$enable_device_control" != "true" ]; then
         bashio::log.info "enable_device_control is false; skipping MCP registration"
+        remove_ha_mcp_servers
         return 0
     fi
 
     if [ -z "${SUPERVISOR_TOKEN:-}" ]; then
         bashio::log.warning "SUPERVISOR_TOKEN is unavailable; skipping Home Assistant MCP setup"
+        remove_ha_mcp_servers
         return 0
     fi
 

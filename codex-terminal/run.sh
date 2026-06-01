@@ -83,6 +83,78 @@ install_tmux_config() {
     fi
 }
 
+configure_codex_cli_defaults() {
+    local config_file="${CODEX_HOME}/config.toml"
+
+    mkdir -p "$CODEX_HOME"
+
+    if [ ! -f "$config_file" ]; then
+        printf 'suppress_unstable_features_warning = true\n' > "$config_file"
+        chmod 600 "$config_file"
+        bashio::log.info "Created Codex config with quiet defaults"
+        return 0
+    fi
+
+    python3 - "$config_file" <<'PY'
+import pathlib
+import re
+import sys
+
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8", errors="replace")
+lines = text.splitlines()
+
+for index, line in enumerate(lines):
+    if re.match(r"\s*suppress_unstable_features_warning\s*=", line):
+        lines[index] = "suppress_unstable_features_warning = true"
+        break
+else:
+    lines.insert(0, "suppress_unstable_features_warning = true")
+
+path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+PY
+    chmod 600 "$config_file"
+}
+
+remove_codex_mcp_server() {
+    local server_name="$1"
+
+    if command -v codex >/dev/null 2>&1; then
+        codex mcp remove "$server_name" >/dev/null 2>&1 || true
+    fi
+}
+
+cleanup_unavailable_mcp_servers() {
+    local enable_ha_mcp mcp_mode readonly_mode enable_device_control
+
+    if ! command -v codex >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # The Codex app connector is not available inside this Home Assistant add-on.
+    # If it was migrated into /data/.codex, Codex prints an MCP startup warning.
+    remove_codex_mcp_server "codex_apps"
+
+    enable_ha_mcp="$(bashio::config "enable_ha_mcp" "true")"
+    mcp_mode="$(bashio::config "mcp_mode" "ha-mcp")"
+    readonly_mode="$(bashio::config "readonly_mode" "false")"
+    enable_device_control="$(bashio::config "enable_device_control" "false")"
+
+    if [ "$enable_ha_mcp" != "true" ] \
+        || [ "$mcp_mode" = "disabled" ] \
+        || [ "$readonly_mode" = "true" ] \
+        || [ "$enable_device_control" != "true" ]; then
+        remove_codex_mcp_server "home-assistant"
+        remove_codex_mcp_server "home-assistant-official"
+    fi
+}
+
+prepare_codex_cli() {
+    bashio::log.info "Preparing Codex CLI configuration..."
+    configure_codex_cli_defaults
+    cleanup_unavailable_mcp_servers
+}
+
 install_runtime_helpers() {
     local helper
 
@@ -202,6 +274,36 @@ generate_ha_context() {
     fi
 }
 
+start_context_refresh_loop() {
+    local ha_smart_context refresh_minutes interval_seconds
+
+    ha_smart_context="$(bashio::config "ha_smart_context" "true")"
+    refresh_minutes="$(bashio::config "ha_context_refresh_minutes" "30")"
+
+    if [ "$ha_smart_context" != "true" ]; then
+        return 0
+    fi
+
+    if ! [[ "$refresh_minutes" =~ ^[0-9]+$ ]]; then
+        refresh_minutes=30
+    fi
+
+    interval_seconds=$((refresh_minutes * 60))
+    [ "$interval_seconds" -gt 300 ] && interval_seconds=300
+    [ "$interval_seconds" -lt 60 ] && interval_seconds=60
+
+    bashio::log.info "Starting Home Assistant context refresh loop (check every ${interval_seconds}s, refresh window ${refresh_minutes}m)"
+
+    (
+        while true; do
+            sleep "$interval_seconds"
+            if command -v ha-context >/dev/null 2>&1; then
+                ha-context --refresh-minutes "$refresh_minutes" >/tmp/codex-ha-context-periodic.log 2>&1 || true
+            fi
+        done
+    ) &
+}
+
 setup_ha_mcp() {
     if [ -f /opt/scripts/setup-ha-mcp.sh ]; then
         bashio::log.info "Configuring Home Assistant MCP integration..."
@@ -233,7 +335,7 @@ get_codex_launch_command() {
     auto_launch_codex="$(bashio::config "auto_launch_codex" "true")"
 
     if [ "$auto_launch_codex" != "true" ]; then
-        echo "bash -l"
+        echo 'ha-context --refresh-minutes "${HA_CONTEXT_REFRESH_MINUTES:-30}" >/tmp/codex-ha-context-refresh.log 2>&1 || true; bash -l'
         return
     fi
 
@@ -269,7 +371,7 @@ start_web_terminal() {
     local ttyd_pid=$!
     trap 'kill "$ttyd_pid" 2>/dev/null || true' EXIT INT TERM
 
-    bashio::log.info "Starting Codex dashboard on port ${web_port}"
+    bashio::log.info "Starting Codex terminal ingress proxy on port ${web_port}"
     python3 /opt/scripts/web-ui.py
 }
 
@@ -277,7 +379,9 @@ main() {
     bashio::log.info "Initializing Codex Terminal add-on..."
     init_environment
     install_runtime_helpers
+    prepare_codex_cli
     run_background_initialization
+    start_context_refresh_loop
     start_web_terminal
 }
 

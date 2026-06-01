@@ -1,7 +1,7 @@
 ---
 name: "Codex Terminal"
 description: "OpenAI Codex direct din sidebar — generează și depanează automatizări, dashboard-uri și YAML cu un asistent care înțelege instalarea ta de Home Assistant."
-version: "1.1.3"
+version: "1.1.6"
 slug: "codex_terminal"
 init: false
 
@@ -21,7 +21,7 @@ panel_admin: true
 ports:
   7681/tcp: null
 ports_description:
-  7681/tcp: "Dashboard and web terminal (not required for ingress)"
+  7681/tcp: "Web terminal (not required for ingress)"
 
 options:
   auto_launch_codex: true

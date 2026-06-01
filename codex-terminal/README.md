@@ -5,11 +5,11 @@ Terminal interface for OpenAI Codex CLI in Home Assistant.
 ## Features
 
 - Sidebar access through Home Assistant ingress.
-- Ingress dashboard with quick actions and the full browser terminal embedded.
+- Full browser terminal through Home Assistant ingress, without an intermediate dashboard.
 - Persistent Codex auth and config in `/data/.codex`.
 - Starts in `/config` for Home Assistant configuration work.
 - `tmux` session persistence across sidebar reconnects.
-- Generated Home Assistant context in Markdown and structured JSON.
+- Generated Home Assistant context in Markdown and structured JSON, refreshed on terminal open when stale.
 - Optional Home Assistant MCP server registration.
 - Bundled HA best-practices, automation, dashboard, template, refactor, add-on, and troubleshooting skills.
 - `codex-ha doctor` diagnostics and `ha-safe-edit plan/apply` staged config workflow.

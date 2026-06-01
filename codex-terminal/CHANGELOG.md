@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.6
+
+### UX
+
+- Redesign the terminal welcome screen with a framed banner, clearer status rows, card-like menu entries, and short startup/context-check animations.
+
+## 1.1.5
+
+### UX
+
+- Remove the dashboard/sidebar UI entirely. The ingress page now opens directly into the full terminal.
+
+### Fixes
+
+- Refresh Home Assistant context automatically when opening the terminal and from a periodic background loop if the generated context is older than the configured refresh window (30 minutes by default).
+
+## 1.1.4
+
+### Fixes
+
+- Suppress Codex's `mentions_v2` unstable-feature warning by writing `suppress_unstable_features_warning = true` into `/data/.codex/config.toml` during startup.
+- Remove unavailable/stale MCP servers before the terminal starts. The add-on now drops migrated `codex_apps` entries and removes Home Assistant MCP entries whenever MCP/device control is disabled, readonly mode is enabled, or setup cannot safely run.
+
 ## 1.1.3
 
 ### Fixes

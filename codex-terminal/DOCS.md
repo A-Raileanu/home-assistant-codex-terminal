@@ -18,10 +18,10 @@ La fiecare deschidere nouă a sidebar-ului vei vedea un **meniu de început** cu
 
 ## Caracteristici
 
-- **Dashboard ingress cu terminal complet** — status, acțiuni rapide și terminal `ttyd` integrat.
+- **Terminal complet în sidebar** — ingress deschide direct terminalul `ttyd`, fără panouri intermediare.
 - **Autentificare persistentă** — salvată în `/data/.codex`, supraviețuiește restart-urilor.
 - **Sesiuni `tmux`** — închizi sidebar-ul, revii la aceeași conversație.
-- **Context Home Assistant** generat automat în Markdown și JSON structurat, refresh la 30 minute.
+- **Context Home Assistant** generat automat în Markdown și JSON structurat; se verifică periodic și la deschiderea terminalului, iar dacă e mai vechi de 30 minute se regenerează.
 - **Skill-uri specializate** pentru HA (entități, dispozitive, automatizări, scripturi, scene, dashboards, template-uri, notificări, refactoring) cu convenții în română.
 - **MCP integrat** — `ha-mcp` community sau endpoint-ul oficial Home Assistant MCP Server.
 - **Editare sigură staged** prin `ha-safe-edit plan/apply` (backup + diff + validare YAML + `check_config`).
