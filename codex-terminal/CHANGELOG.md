@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.10
+
+### UX
+
+- Replace the normal welcome-menu restart option with manual context regeneration, while keeping terminal restart available only when an existing Codex session is active.
+
+## 1.1.9
+
+### UX
+
+- Show the last Home Assistant context update time in the welcome status instead of the generic automatic refresh interval.
+
+## 1.1.8
+
+### Fixes
+
+- Fix welcome menu right-border alignment for Romanian text with diacritics by padding strings based on visible Unicode cell width instead of byte length.
+
 ## 1.1.7
 
 ### Fixes

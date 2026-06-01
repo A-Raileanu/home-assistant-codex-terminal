@@ -14,7 +14,7 @@ Codex citește automat starea curentă a HA (versiuni, integrări, automatizări
 4. Deschide **Codex Terminal** din sidebar.
 5. La prima rulare: `codex login` — autentificare cu contul OpenAI. Auth-ul se salvează în `/data/.codex` și persistă peste restart-uri și update-uri.
 
-La fiecare deschidere nouă a sidebar-ului vei vedea un **meniu de început** cu sarcini comune: sesiune nouă, dispozitiv nou, redenumire dispozitive, ajustare automatizări, reparare referințe sparte și repornire terminal. Dacă există deja o conversație Codex activă, meniul îți oferă întâi opțiunile simple de continuare sau repornire.
+La fiecare deschidere nouă a sidebar-ului vei vedea un **meniu de început** cu sarcini comune: sesiune nouă, dispozitiv nou, redenumire dispozitive, ajustare automatizări, reparare referințe sparte și regenerare manuală a contextului. Dacă există deja o conversație Codex activă, meniul îți oferă opțiunile de continuare, regenerare context sau repornire terminal.
 
 ## Caracteristici
 

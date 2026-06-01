@@ -101,8 +101,8 @@ Cu `auto_launch_codex: true` (default), la fiecare deschidere de sidebar Codex T
      (alias, mode, description, trigger IDs — ignoră ce e deja OK)
   5) Repară automatizările și dashboard-urile cu entități declarate greșit
      (entity_id-uri inexistente, referințe moarte, integrări vechi)
-  6) Repornește terminalul
-     (închide conversația Codex curentă și afișează din nou meniul)
+  6) Regenerează contextul
+     (citește din nou datele Home Assistant pentru Codex)
 
   Apasă [1-6] (default: 1):
 ```
@@ -110,9 +110,9 @@ Cu `auto_launch_codex: true` (default), la fiecare deschidere de sidebar Codex T
 - **Opțiunea 1** lansează Codex normal, fără mesaj inițial — alege asta pentru conversații libere.
 - **Opțiunea 2** te întreabă întâi ce dispozitiv (sau dispozitive) tocmai ai adăugat, apoi îți arată un sumar cu modificările propuse pentru acel device și entitățile lui și așteaptă confirmarea ta înainte să scrie ceva pe `/config`.
 - **Opțiunile 3–5** pornesc Codex cu un prompt pre-completat care citește skill-urile relevante și pregătește modificările conform convențiilor. Înainte de a scrie pe `/config`, Codex îți afișează un sumar cu tot ce vrea să schimbe și te întreabă dacă să pregătească planul tehnic. Aplică doar după confirmarea ta finală.
-- **Opțiunea 6** închide sesiunea Codex curentă și afișează din nou meniul de început.
+- **Opțiunea 6** regenerează manual contextul Home Assistant și revine la meniu cu ora ultimei actualizări afișată.
 - Toate trei sunt **idempotente** — sare peste ce respectă deja convenția, deci poți rula opțiunea 2 lunar fără să strice nimic.
-- Dacă există deja o sesiune activă (ai închis sidebar-ul și revii), meniul îți arată două opțiuni simple: continui conversația existentă sau repornești terminalul.
+- Dacă există deja o sesiune activă (ai închis sidebar-ul și revii), meniul îți arată trei opțiuni simple: continui conversația existentă, regenerezi contextul sau repornești terminalul.
 
 Pentru a sări complet peste picker și a primi shell-ul direct, setează `auto_launch_codex: false` în opțiunile add-on-ului. Vei intra în `bash`; pornește manual Codex cu `codex --cd /config`.
 

@@ -27,6 +27,7 @@ DARK_GREY=$'\033[38;5;240m'
 ARROW='▶'
 DOT='●'
 BOX_WIDTH=88
+declare -A PAD_CACHE=()
 
 # ----- Preset prompts -----
 # Shared confirmation gate appended to every actionable preset: Codex must
@@ -47,7 +48,7 @@ TITLES=(
     "Redenumește dispozitivele și senzorii"
     "Ajustează automatizările"
     "Repară referințele sparte"
-    "Repornește terminalul"
+    "Regenerează contextul"
 )
 DESCRIPTIONS=(
     "Conversație liberă despre HA."
@@ -55,7 +56,7 @@ DESCRIPTIONS=(
     "Curăță numele care nu respectă regula."
     "Normalizează alias, mode și trigger-e."
     "Caută entități inexistente în config."
-    "Închide sesiunea și revine la meniu."
+    "Citește din nou datele Home Assistant."
 )
 PROMPTS=(
     ""
@@ -63,7 +64,7 @@ PROMPTS=(
     "$PROMPT_RENAME"
     "$PROMPT_AUTOMATIONS"
     "$PROMPT_FIX"
-    "__RESTART__"
+    "__REGENERATE_CONTEXT__"
 )
 
 COUNT=${#TITLES[@]}
@@ -73,6 +74,7 @@ SESSION_STATE="nouă"
 ADDON_VER="$(cat /opt/scripts/addon-version 2>/dev/null || echo '?.?.?')"
 CODEX_VER="$(codex --version 2>/dev/null | awk '{print $NF}' || echo 'n/a')"
 FULL_PERMS="${CODEX_HA_FULL_PERMISSIONS:-true}"
+CONTEXT_STATUS="nu există încă"
 
 refresh_context_if_needed() {
     local refresh_minutes="${HA_CONTEXT_REFRESH_MINUTES:-30}"
@@ -108,6 +110,87 @@ refresh_context_if_needed() {
     fi
 }
 
+regenerate_context_now() {
+    local status_file="/tmp/codex-ha-context-refresh.log"
+    local pid frame
+    local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+
+    printf '\033[?25l'
+    printf '\033[H\033[J'
+    printf '\n\n'
+    printf '  %s╭────────────────────────────────────────────────────────────╮%s\n' "$ACCENT_DIM" "$RESET"
+    printf '  %s│%s  %s%sRegenerez contextul Home Assistant%s                  %s│%s\n' "$ACCENT_DIM" "$RESET" "$BOLD" "$WHITE" "$RESET" "$ACCENT_DIM" "$RESET"
+    printf '  %s│%s  %sCitesc entități, integrări, automatizări și erori.%s    %s│%s\n' "$ACCENT_DIM" "$RESET" "$DIM$GREY" "$RESET" "$ACCENT_DIM" "$RESET"
+    printf '  %s╰────────────────────────────────────────────────────────────╯%s\n\n' "$ACCENT_DIM" "$RESET"
+
+    if ! command -v ha-context >/dev/null 2>&1; then
+        printf '  %s!%s %sha-context nu este disponibil.%s\n' "$YELLOW" "$RESET" "$GREY" "$RESET"
+        sleep 1
+        return 0
+    fi
+
+    ha-context --force >"$status_file" 2>&1 &
+    pid=$!
+    frame=0
+    while kill -0 "$pid" 2>/dev/null; do
+        printf '\r  %s%s%s %sActualizez contextul...%s' \
+            "$ACCENT" "${frames[$((frame % ${#frames[@]}))]}" "$RESET" "$GREY" "$RESET"
+        frame=$((frame + 1))
+        sleep 0.08
+    done
+
+    if wait "$pid"; then
+        printf '\r  %s✓%s %sContext regenerat.%s                         \n' "$GREEN" "$RESET" "$GREY" "$RESET"
+    else
+        printf '\r  %s!%s %sRegenerarea contextului a eșuat.%s          \n' "$YELLOW" "$RESET" "$GREY" "$RESET"
+    fi
+    sleep 0.8
+}
+
+update_context_status() {
+    local manifest="/data/ha-context/manifest.json"
+    local agents_md="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
+
+    CONTEXT_STATUS="$(
+        python3 - "$manifest" "$agents_md" <<'PY'
+import json
+import pathlib
+import re
+import sys
+from datetime import datetime
+
+manifest = pathlib.Path(sys.argv[1])
+agents_md = pathlib.Path(sys.argv[2])
+raw = ""
+
+if manifest.exists():
+    try:
+        raw = json.loads(manifest.read_text(encoding="utf-8")).get("generated_at", "")
+    except Exception:
+        raw = ""
+
+if not raw and agents_md.exists():
+    match = re.search(r"^Last updated:\s*(.+)$", agents_md.read_text(encoding="utf-8", errors="replace"), re.M)
+    if match:
+        raw = match.group(1).strip()
+
+if not raw:
+    print("nu există încă")
+    raise SystemExit
+
+for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d %H:%M:%S"):
+    try:
+        value = datetime.strptime(raw, fmt)
+        print("actualizat la " + value.strftime("%d.%m.%Y %H:%M"))
+        raise SystemExit
+    except ValueError:
+        pass
+
+print("actualizat la " + raw)
+PY
+    )"
+}
+
 cleanup_term() {
     printf '\033[?25h'
     stty echo icanon 2>/dev/null || true
@@ -127,6 +210,43 @@ repeat_char() {
     printf '%s' "$output"
 }
 
+pad_text() {
+    local text="$1"
+    local target_width="$2"
+    local cache_key="${target_width}|${text}"
+    local padded
+
+    if [ "${PAD_CACHE[$cache_key]+set}" = "set" ]; then
+        printf '%s' "${PAD_CACHE[$cache_key]}"
+        return 0
+    fi
+
+    padded="$(python3 - "$target_width" "$text" <<'PY'
+import sys
+import unicodedata
+
+target = int(sys.argv[1])
+text = sys.argv[2]
+
+def cell_width(value: str) -> int:
+    width = 0
+    for char in value:
+        if unicodedata.combining(char):
+            continue
+        if unicodedata.east_asian_width(char) in {"F", "W"}:
+            width += 2
+        else:
+            width += 1
+    return width
+
+padding = max(target - cell_width(text), 0)
+sys.stdout.write(text + (" " * padding))
+PY
+)"
+    PAD_CACHE[$cache_key]="$padded"
+    printf '%s' "$padded"
+}
+
 draw_rule() {
     local left="$1"
     local fill="$2"
@@ -138,8 +258,10 @@ draw_rule() {
 draw_box_text() {
     local text="$1"
     local color="${2:-$WHITE}"
+    local padded
 
-    printf '  %s│%s %s%-*s%s %s│%s\n' "$ACCENT_DIM" "$RESET" "$color" "$((BOX_WIDTH - 2))" "$text" "$RESET" "$ACCENT_DIM" "$RESET"
+    padded="$(pad_text "$text" "$((BOX_WIDTH - 2))")"
+    printf '  %s│%s %s%s%s %s│%s\n' "$ACCENT_DIM" "$RESET" "$color" "$padded" "$RESET" "$ACCENT_DIM" "$RESET"
 }
 
 intro_animation() {
@@ -190,8 +312,8 @@ draw_status() {
     printf '  %s%s%s %s%s%s\n' "$perms_color" "$perms_marker" "$RESET" "$GREY" "$perms_label" "$RESET"
     printf '  %s%s%s %sSesiune terminal:%s %scodex%s %s(%s)%s\n' \
         "$session_color" "$DOT" "$RESET" "$GREY" "$RESET" "$BOLD$WHITE" "$RESET" "$DIM$GREY" "$SESSION_STATE" "$RESET"
-    printf '  %s%s%s %sContext:%s %sse verifică automat la 30 minute%s\n' \
-        "$ACCENT" "$DOT" "$RESET" "$GREY" "$RESET" "$DIM$GREY" "$RESET"
+    printf '  %s%s%s %sContext:%s %s%s%s\n' \
+        "$ACCENT" "$DOT" "$RESET" "$GREY" "$RESET" "$DIM$GREY" "$CONTEXT_STATUS" "$RESET"
 }
 
 draw_menu_item() {
@@ -199,6 +321,7 @@ draw_menu_item() {
     local title="$2"
     local description="$3"
     local marker num_color title_color desc_color border_color
+    local title_padded desc_padded
 
     if [ "$((index - 1))" -eq "$SELECTED" ]; then
         marker="${ARROW}"
@@ -214,12 +337,15 @@ draw_menu_item() {
         border_color="$DARK_GREY"
     fi
 
-    printf '  %s│%s %s%s%s %s%2d%s  %s%-81s%s%s│%s\n' \
+    title_padded="$(pad_text "$title" "$((BOX_WIDTH - 7))")"
+    desc_padded="$(pad_text "$description" "$((BOX_WIDTH - 6))")"
+
+    printf '  %s│%s %s%s%s %s%2d%s  %s%s%s%s│%s\n' \
         "$border_color" "$RESET" "$ACCENT" "$marker" "$RESET" \
         "$num_color" "$index" "$RESET" \
-        "$title_color" "$title" "$RESET" "$border_color" "$RESET"
-    printf '  %s│%s      %s%-82s%s%s│%s\n' \
-        "$border_color" "$RESET" "$desc_color" "$description" "$RESET" "$border_color" "$RESET"
+        "$title_color" "$title_padded" "$RESET" "$border_color" "$RESET"
+    printf '  %s│%s      %s%s%s%s│%s\n' \
+        "$border_color" "$RESET" "$desc_color" "$desc_padded" "$RESET" "$border_color" "$RESET"
 }
 
 draw_footer() {
@@ -266,6 +392,12 @@ launch_with_prompt() {
             cleanup_term
             exec tmux attach-session -t "$TMUX_SESSION_NAME"
             ;;
+        "__REGENERATE_CONTEXT__")
+            regenerate_context_now
+            update_context_status
+            render
+            return
+            ;;
         "__RESTART__")
             restart_terminal
             ;;
@@ -293,14 +425,17 @@ configure_menu() {
     if tmux has-session -t "$TMUX_SESSION_NAME" 2>/dev/null; then
         TITLES=(
             "Continuă sesiunea deschisă"
+            "Regenerează contextul"
             "Repornește terminalul"
         )
         DESCRIPTIONS=(
             "Revii la conversația deja pornită."
+            "Citește din nou datele Home Assistant."
             "Închide sesiunea și revine la meniu."
         )
         PROMPTS=(
             "__ATTACH__"
+            "__REGENERATE_CONTEXT__"
             "__RESTART__"
         )
         COUNT=${#TITLES[@]}
@@ -312,6 +447,7 @@ configure_menu() {
 
 main() {
     refresh_context_if_needed
+    update_context_status
     configure_menu
     intro_animation
 
