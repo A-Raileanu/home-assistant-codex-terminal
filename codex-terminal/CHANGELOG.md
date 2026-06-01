@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+### Fixes
+
+- Fix Home Assistant ingress routing for the new dashboard by using ingress-relative URLs for status/action calls and the embedded terminal. This fixes `404: Not Found` in the terminal pane and JSON parse errors from `/api/status` being requested at the Home Assistant root.
+
 ## 1.1.0
 
 ### Features

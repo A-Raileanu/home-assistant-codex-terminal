@@ -118,7 +118,7 @@ async def index(_: web.Request) -> web.Response:
 
 
 async def terminal_redirect(_: web.Request) -> web.Response:
-    raise web.HTTPFound("/terminal/")
+    raise web.HTTPFound("terminal/")
 
 
 async def terminal_proxy(request: web.Request) -> web.StreamResponse:
@@ -314,7 +314,7 @@ HTML = r"""<!doctype html>
 <body>
   <header>
     <h1>Codex Terminal</h1>
-    <a class="button" href="/terminal/" target="_blank" rel="noreferrer">Terminal full screen</a>
+    <a class="button" href="#" data-terminal-link target="_blank" rel="noreferrer">Terminal full screen</a>
   </header>
   <main>
     <aside>
@@ -331,7 +331,7 @@ HTML = r"""<!doctype html>
         <button data-action="check-config">Check config</button>
         <button data-action="mcp-list">MCP list</button>
         <button data-action="list-plans">Edit plans</button>
-        <a class="button" href="/terminal/" target="_blank" rel="noreferrer">Open terminal</a>
+        <a class="button" href="#" data-terminal-link target="_blank" rel="noreferrer">Open terminal</a>
       </div>
       <div class="panel">
         <h2>Output</h2>
@@ -343,12 +343,20 @@ HTML = r"""<!doctype html>
       </div>
     </aside>
     <section class="terminal">
-      <iframe src="/terminal/" title="Codex terminal"></iframe>
+      <iframe id="terminal-frame" src="about:blank" title="Codex terminal"></iframe>
     </section>
   </main>
   <script>
     const output = document.getElementById('output');
     const startup = document.getElementById('startup');
+    const path = window.location.pathname;
+    const ingressBase = path.endsWith('/') ? path : path + '/';
+    const ingressUrl = (suffix) => ingressBase + suffix.replace(/^\/+/, '');
+    const terminalUrl = ingressUrl('terminal/');
+    document.getElementById('terminal-frame').src = terminalUrl;
+    document.querySelectorAll('[data-terminal-link]').forEach(link => {
+      link.href = terminalUrl;
+    });
     const setText = (id, text, cls) => {
       const el = document.getElementById(id);
       el.textContent = text;
@@ -356,7 +364,7 @@ HTML = r"""<!doctype html>
     };
     async function refreshStatus() {
       try {
-        const res = await fetch('/api/status');
+        const res = await fetch(ingressUrl('api/status'));
         const data = await res.json();
         setText('codex', data.codex_version || 'unavailable', data.codex_version === 'unavailable' ? 'bad' : 'ok');
         setText('auth', data.codex_auth_present ? 'present' : 'missing', data.codex_auth_present ? 'ok' : 'warn');
@@ -373,7 +381,7 @@ HTML = r"""<!doctype html>
       button.disabled = true;
       output.textContent = 'Running ' + name + '...';
       try {
-        const res = await fetch('/api/actions/' + name, { method: 'POST' });
+        const res = await fetch(ingressUrl('api/actions/' + name), { method: 'POST' });
         const data = await res.json();
         output.textContent = data.output || JSON.stringify(data, null, 2);
       } catch (error) {
