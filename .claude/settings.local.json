@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git mv *)",
+      "Bash(bash codex-terminal/scripts/validate-skills.sh codex-terminal/skills)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(bash -n codex-terminal/run.sh)",
+      "Bash(bash -n codex-terminal/scripts/ha-context.sh)",
+      "Bash(git rm *)",
+      "Bash(bash -n codex-terminal/scripts/codex-ha.sh)",
+      "Bash(bash -n codex-terminal/scripts/codex-session-picker.sh)",
+      "Bash(bash -n /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/run.sh /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/scripts/ha-context.sh /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/scripts/codex-ha.sh)",
+      "Bash(bash -n /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/run.sh)",
+      "Bash(bash /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/scripts/validate-skills.sh /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/skills)",
+      "Bash(bash -n /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/scripts/codex-ha.sh /Users/andrei/Developer/home-assistant-codex-terminal/codex-terminal/scripts/ha-context.sh)",
+      "Bash(curl -sS https://registry.npmjs.org/@openai/codex)",
+      "Bash(gh api *)",
+      "WebFetch(domain:developers.openai.com)",
+      "Bash(gh search *)",
+      "Bash(chmod +x codex-terminal/scripts/codex-task-picker.sh)",
+      "Bash(bash -n codex-terminal/scripts/codex-task-picker.sh)"
+    ]
+  }
+}

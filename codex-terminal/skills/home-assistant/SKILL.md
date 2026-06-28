@@ -1,132 +1,75 @@
 ---
 name: home-assistant
-description: Index OBLIGATORIU pentru Home Assistant. Trebuie consultat ÎNAINTE de orice operațiune care creează, redenumește sau modifică un device, entitate, area, label, automatizare, script, scenă, helper, dashboard, notificare sau template — pentru a aplica convențiile de denumire ale repo-ului.
+description: Index obligatoriu pentru lucrul cu Home Assistant in Codex. Foloseste-l inainte de a crea, redenumi sau modifica device-uri, entitati, arii, labels, automatizari, scripturi, scene, helpers, dashboard-uri, notificari, template-uri sau service calls; include rutare rapida, conventii de naming, rename_memory.json si tooling de audit.
 ---
 
-# Home Assistant Skills — Index
+# Home Assistant — Router Rapid
 
-Skill-uri pentru inventar consistent și automatizări lizibile. **Citește doar fișierul relevant pentru taskul curent** — nu citi tot repo-ul.
+Foloseste acest skill ca index. Citeste doar entrypoint-ul relevant, apoi doar referinta indicata de acel entrypoint daca ai nevoie de detalii.
 
----
+## Workflow Obligatoriu
 
-## ⛔ Reguli obligatorii (nu sări peste)
+1. Identifica elementul atins si deschide fisierul din tabelul de rutare.
+2. Daca atingi device-uri sau entitati, consulta `/data/ha-context/rename_memory.json` inainte de plan.
+3. Nu redenumi nimic care are `skip_rename_by_default: true`, `is_canonical_name: true` sau `is_canonical_friendly_name: true`, cu exceptia cazului in care utilizatorul cere explicit redenumirea.
+4. Aplica romana cu diacritice pentru alias-uri, descrieri, friendly names si labels vizibile; pastreaza engleza pentru `entity_id`, slug-uri si chei YAML.
+5. Pentru entitati, seteaza explicit `friendly_name: "[Area] Nume dispozitiv - Functie"`; pentru entitatea principala fara sub-functie foloseste `"[Area] Nume dispozitiv"`.
+6. Pentru `/config`, planifica intai cu `ha-safe-edit plan <file> -- <command...>` si aplica doar dupa confirmare.
+7. Dupa schimbari tangibile de device, entitate, label sau `entity_id`, ruleaza `ha-context --force`.
 
-**Înainte de orice operațiune care creează, redenumește sau modifică un element vizibil în Home Assistant**, aplică integral convențiile de denumire din fișierul corespunzător. Nu inventa propriile reguli, nu improviza nume — convențiile sunt explicite și sursa de adevăr.
+## Rutare
 
-| Element atins | Fișier OBLIGATORIU de citit înainte |
+| Task | Citeste intai |
 |---|---|
-| Device (nume, model, identifiers) | [ha-devices-areas.md](ha-devices-areas.md#device-names) |
-| Entitate (`entity_id`, friendly name, `has_entity_name`, `device_class`, `state_class`) | [ha-entities.md](ha-entities.md) |
-| Area (creare / redenumire) | [ha-devices-areas.md](ha-devices-areas.md#areas) |
-| Label (slug, atribuire pe tipuri de device) | [ha-devices-areas.md](ha-devices-areas.md#labels) |
-| Automatizare (alias, `mode`, trigger IDs, condiții) | [ha-automations.md](ha-automations.md) |
-| Script (alias, `fields:`, pași `sequence:`, variabile) | [ha-scripts-steps.md](ha-scripts-steps.md) |
-| Scenă | [ha-helpers-scenes.md](ha-helpers-scenes.md#scene-uri) |
-| Helper (boolean, number, timer, counter, template etc.) | [ha-helpers-scenes.md](ha-helpers-scenes.md) |
-| Dashboard, view, card | [ha-dashboards.md](ha-dashboards.md) |
-| Notificare / alertă / TTS | [ha-notifications.md](ha-notifications.md) |
-| Template (Jinja2, template sensor, trigger-based) | [ha-templates.md](ha-templates.md) |
-| Service call / device control | [ha-device-control.md](ha-device-control.md) |
-| Redenumire / refactoring entități | [ha-refactoring.md](ha-refactoring.md) |
+| Device, arii, labels, onboarding device nou | [ha-devices-areas.md](ha-devices-areas.md) |
+| Entity ID, friendly name, vocabular functii, `device_class` | [ha-entities.md](ha-entities.md) |
+| Automatizari, trigger IDs, `mode`, conditii, dezactivare | [ha-automations.md](ha-automations.md) |
+| Scripturi, `fields`, `sequence`, variabile | [ha-scripts-steps.md](ha-scripts-steps.md) |
+| Helpers, scene, alegerea intre helper/template/script | [ha-helpers-scenes.md](ha-helpers-scenes.md) |
+| Dashboard Lovelace, views, cards, styling | [ha-dashboards.md](ha-dashboards.md) |
+| Notificari, alerte, TTS | [ha-notifications.md](ha-notifications.md) |
+| Template-uri Jinja2 si template sensors | [ha-templates.md](ha-templates.md) |
+| Service calls, lumini, climate, cover, media, ZHA/Z2M | [ha-device-control.md](ha-device-control.md) |
+| Redenumiri, impact analysis, referinte stale | [ha-refactoring.md](ha-refactoring.md) |
+| Exemple end-to-end | [ha-examples.md](ha-examples.md) |
+| Reguli comune scurte | [references/core-rules.md](references/core-rules.md) |
+| Note sensibile la versiunea HA | [references/ha-version-notes.md](references/ha-version-notes.md) |
 
-**Workflow obligatoriu pentru orice modificare tangibilă:**
+## Memorie Runtime
 
-1. **Identifică tipul de element** atins de task.
-2. **Citește fișierul corespunzător + `inventory.yaml`** (acesta din urmă întotdeauna dacă atingi device-uri sau entități — e sursa de adevăr).
-3. **Aplică toate convențiile** din fișier (limbă, casing, slug-uri, structură, câmpuri tehnice obligatorii). Convenția generală a repo-ului: **română** peste tot (alias-uri, comentarii, friendly names, descrieri) cu diacritice complete; **engleză** doar pentru `entity_id` slugs, slug-uri de label și câmpuri tehnice YAML.
-4. **Regula cheie pentru entități:** `friendly_name = "[Area] Nume dispozitiv - <Funcție>"` explicit pe **fiecare** entitate (nu te baza pe `has_entity_name`). Pentru entitatea principală a unui device fără sub-funcții: `friendly_name = "[Area] Nume dispozitiv"`. Detalii și vocabular de funcții: [ha-entities.md](ha-entities.md#format-canonic).
-5. **Dacă o convenție pare neclară sau lipsește**, întreabă utilizatorul înainte să improvizezi. Nu inventa.
-6. **Pentru fișiere din `/config`**, pregătește întâi un diff cu `ha-safe-edit plan <file> -- <command...>`, apoi aplică doar după confirmare explicită cu `ha-safe-edit apply <plan_id>`.
-7. **La final**, dacă ai modificat ceva tangibil (device, entitate, redenumire, label nou), actualizează `inventory.yaml` cu o intrare nouă în `change_log:` și, după caz, în `devices:`.
+`/data/ha-context/rename_memory.json` inlocuieste orice inventar manual. Pentru audit rapid, ruleaza:
 
-Inconsistența în denumire produce regresiuni la dashboards, automatizări existente, statistici long-term și integrări care depind de `entity_id`. Trateaz-o ca pe un blocker, nu ca pe un detaliu cosmetic.
+```bash
+python "$CODEX_HOME/skills/home-assistant/scripts/ha_rename_audit.py" --summary
+python "$CODEX_HOME/skills/home-assistant/scripts/ha_rename_audit.py" --pending
+```
 
----
+Pentru cautarea referintelor unui `entity_id` in `/config`:
 
-## Quick start (pentru AI)
+```bash
+python "$CODEX_HOME/skills/home-assistant/scripts/ha_reference_scan.py" sensor.living_temperatura
+```
 
-1. **Identifică taskul** în tabelul de rutare de mai jos.
-2. **Citește DOAR fișierul corespunzător** + `inventory.yaml` dacă taskul atinge device-uri/entități.
-3. **La sfârșit** dacă ai modificat ceva tangibil în HA (device, entitate, redenumire): actualizează `inventory.yaml` cu o intrare nouă în `change_log:`.
-4. **Nu citi în avans** fișiere care nu se aplică — token-uri irosite.
+Detalii: [references/rename-memory.md](references/rename-memory.md).
 
----
+## Reguli Comune
 
-## Rutare — ce fișier să citești
+- `entity_id` este cheia tehnica; friendly name este cosmetic. Redenumirea de `entity_id` cere audit de referinte.
+- Preferi `entity_id` in loc de `device_id` cand exista alternativa stabila.
+- Folosesti `target:` si `data:` in service calls.
+- Folosesti `color_temp_kelvin`, nu `color_temp`.
+- Preferi helpers/native conditions in loc de template-uri cand exprima aceeasi logica.
+- Preferi `notify.send_message` cu `target:` in loc de servicii per-platforma.
+- Pentru reguli dependente de versiunea HA, verifica [references/ha-version-notes.md](references/ha-version-notes.md) si documentatia oficiala daca instanta ruleaza alta versiune.
 
-| Task | Fișier |
-| ---- | ------ |
-| Adaugă / redenumește o area | [ha-devices-areas.md](ha-devices-areas.md#areas) |
-| Găsește / creează / atribuie un label (tip device) | [ha-devices-areas.md](ha-devices-areas.md#labels) |
-| Numește un device nou (`[Cameră] Producător Model`) | [ha-devices-areas.md](ha-devices-areas.md#device-names) |
-| Shelly multi-canal, senzor multi-funcție, cameră video | [ha-devices-areas.md](ha-devices-areas.md#cazuri-speciale-frecvente) |
-| Workflow complet adăugare device (10 pași) | [ha-devices-areas.md](ha-devices-areas.md#cheat-sheet--adăugare-device-nou) |
-| Schema `inventory.yaml` / workflow actualizare | [ha-devices-areas.md](ha-devices-areas.md#inventar-persistent--inventoryyaml) |
-| Găsește entity name (RO) corect — vocabular funcții | [ha-entities.md](ha-entities.md) |
-| 120+ termeni entity: Energie, Climat, Mișcare, Securitate... | [ha-entities.md](ha-entities.md) |
-| Format entity ID, reguli stricte | [ha-entities.md](ha-entities.md#entity-ids) |
-| `device_class` recomandat pentru template sensors | [ha-entities.md](ha-entities.md#device-classes-recomandate) |
-| Dezactivare entități nefolosite post-import | [ha-entities.md](ha-entities.md#post-redenumire-dezactivare-entități--verificare-referințe) |
-| Creează / redenumește o automatizare | [ha-automations.md](ha-automations.md) |
-| Alege `mode:` (single/restart/queued/parallel) | [ha-automations.md](ha-automations.md#câmpul-mode) |
-| Trigger IDs (`id:` pe declanșatori) | [ha-automations.md](ha-automations.md#trigger-id-uri) |
-| Bune practici, condiții native, wait actions, repeat | [ha-automations.md](ha-automations.md#bune-practici-și-pattern-uri) |
-| Dezactivare automatizări (Metoda 1 vs Metoda 2) | [ha-automations.md](ha-automations.md#dezactivarea-automatizărilor) |
-| Anti-pattern-uri automatizări | [ha-automations.md](ha-automations.md#anti-pattern-uri) |
-| Creează / redenumește un script | [ha-scripts-steps.md](ha-scripts-steps.md) |
-| Definește `fields:` (parametri script, selector types) | [ha-scripts-steps.md](ha-scripts-steps.md#câmpul-fields-parametri) |
-| Scrie alias-uri pentru pași (`alias:` în sequence) | [ha-scripts-steps.md](ha-scripts-steps.md#pași-steps--sequence) |
-| `variables:` în secvențe (reutilizare valori) | [ha-scripts-steps.md](ha-scripts-steps.md#variabile-reutilizabile--variables) |
-| Creează un helper (boolean, number, timer, counter, etc.) | [ha-helpers-scenes.md](ha-helpers-scenes.md) |
-| Alege între helpers (decision matrix) | [ha-helpers-scenes.md](ha-helpers-scenes.md#ghid-selectare-helper-când-să-folosești-ce) |
-| Creează o scenă | [ha-helpers-scenes.md](ha-helpers-scenes.md#scene-uri) |
-| Scrie o notificare / alertă / anunț TTS | [ha-notifications.md](ha-notifications.md) |
-| `notify.send_message` (HA 2024.7+) | [ha-notifications.md](ha-notifications.md#serviciul-recomandat--notifysend_message-ha-20247) |
-| Canale, priorități, notificări acționabile, Jinja2 | [ha-notifications.md](ha-notifications.md) |
-| Creează sau modifică un dashboard Lovelace | [ha-dashboards.md](ha-dashboards.md) |
-| View types, carduri built-in, features, custom cards | [ha-dashboards.md](ha-dashboards.md) |
-| CSS styling, HACS, anti-pattern-uri dashboard | [ha-dashboards.md](ha-dashboards.md) |
-| Scrie sau depanează template-uri Jinja2 | [ha-templates.md](ha-templates.md) |
-| Când să folosești templates vs native conditions | [ha-templates.md](ha-templates.md#când-să-eviți-template-urile) |
-| Performanță templates, trigger-based templates | [ha-templates.md](ha-templates.md) |
-| Redenumire entități, impact analysis | [ha-refactoring.md](ha-refactoring.md) |
-| Config-Entry-Groups, Config-Entry-Data (blind spots) | [ha-refactoring.md](ha-refactoring.md#config-entry-groups) |
-| Storage dashboards, YAML-only integrations | [ha-refactoring.md](ha-refactoring.md#storage-dashboards-storagelovelace) |
-| Exemplu concret end-to-end refactoring | [ha-refactoring.md](ha-refactoring.md#exemplu-end-to-end--redenumire-smart-plug) |
-| Service calls, structura `target:` / `data:` | [ha-device-control.md](ha-device-control.md#service-calls-best-practices) |
-| ZHA buttons (`device_ieee`), Z2M triggers | [ha-device-control.md](ha-device-control.md#zigbee-buttonremote-patterns) |
-| Lumini (`color_temp_kelvin`), climate, cover, vacuum | [ha-device-control.md](ha-device-control.md#domain-specific-patterns) |
-| Diagnosticare device-uri și troubleshooting | [ha-device-control.md](ha-device-control.md#diagnosticare-și-troubleshooting) |
-| Add-on (App) development, Supervisor API | [ha-device-control.md](ha-device-control.md#add-on-development) |
-| Exemple YAML complete și cheat sheet rapid | [ha-examples.md](ha-examples.md) |
-| Pattern-uri compuse (8 exemple best practice) | [ha-examples.md](ha-examples.md#exemple-pattern-uri-best-practices) |
+## Glosar Minimal
 
----
-
-## Inventarul
-
-[`inventory.yaml`](inventory.yaml) este **sursa de adevăr** pentru toate device-urile și entitățile gestionate în HA-ul utilizatorului. AI-ul îl citește la începutul oricărei sesiuni care implică device-uri și îl actualizează la sfârșit (`devices:` + `change_log:`). Schema completă: vezi `ha-devices-areas.md` secțiunea Inventar.
-
----
-
-## Glosar — termeni HA folosiți des
-
-| Termen | Definiție |
+| Termen | Sens |
 |---|---|
-| **Entity** | O unitate funcțională în HA (`light.living_ceiling`). Format: `<domain>.<slug>`. Are stare + atribute. |
-| **Device** | Grupare logică a mai multor entități care aparțin aceluiași hardware fizic (un Aqara T1 = `sensor.temperature` + `sensor.humidity` + `sensor.battery`). |
-| **Area** | O „cameră" sau locație logică (`living`, `dormitor1`). Entitățile și device-urile se asignează unei arii. |
-| **Label** | Etichetă transversală pe TIPUL de device (`lumina`, `senzor_miscare`). Independentă de arie. |
-| **Entity Registry** | `core.entity_registry` din `.storage/`. Conține entity_id, friendly name, disabled state, area, labels, unique_id. |
-| **Device Registry** | `core.device_registry` din `.storage/`. Conține device_id, manufacturer, model, identifiers, area. |
-| **Config Entry** | Configurare per-integrare în `core.config_entries`. Conține `data` (setup inițial) + `options` (modificate via Options Flow). |
-| **Config Flow** | UI wizard la prima setare a unei integrări. Scrie în `data` al Config Entry. |
-| **Options Flow** | UI wizard pentru modificarea unei integrări existente. Scrie în `options`. Unul activ per Config Entry. |
-| **Helper** | Entitate virtuală creată din UI (input_boolean, input_number, timer, counter, template helper, etc.). |
-| **Service call** | Acțiunea unei automatizări/script. Format: `action: domain.service_name` + `target:` + `data:`. |
-| **Trigger** | Eveniment care pornește o automatizare (`state`, `numeric_state`, `event`, `time`, `mqtt`, etc.). |
-| **`has_entity_name: True`** | Convenție HA 2023+ — entity name se concatenează automat cu device name la afișare. |
-| **`.storage/`** | Directorul intern HA cu fișiere JSON de stare (`lovelace.*`, `core.entity_registry`, `core.device_registry`, `core.config_entries`). **Nu se editează direct** — folosește REST/WebSocket API. |
-| **`unique_id`** | ID unic intern pentru o entitate, persistent la redenumiri. Permite customizare din UI. Obligatoriu pentru template sensors. |
-| **`device_class`** | Etichetă semantică HA (`power`, `temperature`, `motion`) care influențează unități, iconițe, integrarea în Energy Dashboard. |
-| **`state_class`** | `measurement` / `total` / `total_increasing` — controlează cum HA generează statistici pe termen lung. |
+| Entity | Unitate functionala HA: `domain.slug`, cu stare si atribute. |
+| Device | Grupare logica pentru entitatile aceluiasi hardware. |
+| Area | Camera sau locatie logica. |
+| Label | Eticheta transversala pentru tipuri de device/functii. |
+| Helper | Entitate virtuala HA: `input_boolean`, `timer`, `counter`, template helper etc. |
+| Service call | Actiune `domain.service` cu `target:` si `data:`. |
+| Config Entry | Configurarea interna a unei integrari in `.storage/core.config_entries`. |

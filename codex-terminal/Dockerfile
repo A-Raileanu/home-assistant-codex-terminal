@@ -1,7 +1,7 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-ARG CODEX_VERSION=0.136.0
+ARG CODEX_VERSION=0.142.3
 
 RUN apk add --no-cache \
     bash \

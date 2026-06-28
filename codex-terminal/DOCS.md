@@ -92,10 +92,10 @@ Pentru `mcp_mode: official`, configurează întâi integrarea **Home Assistant M
 
 ## Skill-uri integrate
 
-Add-on-ul instalează în `/data/.codex/skills/` un skill umbrella `home-assistant` cu un index de rutare în română și fișiere pe topic:
+Add-on-ul instalează în `/data/.codex/skills/` un skill umbrella `home-assistant` cu un index de rutare în română, entrypoint-uri scurte pe topic, referințe detaliate încărcate la nevoie și scripturi de audit:
 
 - **ha-entities** — vocabular funcții (120+ termeni RO), entity IDs, device_class.
-- **ha-devices-areas** — convenții pentru dispozitive, areas, labels, inventar persistent.
+- **ha-devices-areas** — convenții pentru dispozitive, areas, labels și memoria runtime `rename_memory.json`.
 - **ha-automations** — automatizări (mode, trigger IDs, choose, repeat, anti-patterns).
 - **ha-scripts-steps** — scripturi cu parametri, alias, variabile.
 - **ha-helpers-scenes** — helpers (boolean, number, timer, counter) și scene.
@@ -106,7 +106,9 @@ Add-on-ul instalează în `/data/.codex/skills/` un skill umbrella `home-assista
 - **ha-refactoring** — redenumire entități, impact analysis, storage dashboards.
 - **ha-examples** — exemple complete end-to-end cu best practices.
 
-Toate convențiile sunt în română cu diacritice complete. Un al doilea skill `home-assistant-instance` se generează automat de fiecare dată de `ha-context` și conține flag-urile de runtime și safety ale instalării tale.
+Detaliile lungi sunt în `home-assistant/references/`; entrypoint-urile `ha-*.md` rămân mici ca să reducă tokenii încărcați în Codex. Pentru audit rapid există `home-assistant/scripts/ha_rename_audit.py` și `home-assistant/scripts/ha_reference_scan.py`.
+
+Toate convențiile sunt în română cu diacritice complete. Un al doilea skill `home-assistant-instance` se generează automat de fiecare dată de `ha-context` și conține flag-urile de runtime, safety și instrucțiuni pentru `/data/ha-context/rename_memory.json`.
 
 ## Editare sigură
 

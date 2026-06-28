@@ -345,6 +345,50 @@ section_recorder() {
     fi
 }
 
+section_rename_memory() {
+    local entity_registry="/config/.storage/core.entity_registry"
+    local device_registry="/config/.storage/core.device_registry"
+    local states
+
+    if [ ! -f "$entity_registry" ] || [ ! -f "$device_registry" ]; then
+        echo "Registry files are not available yet."
+        return
+    fi
+
+    states="$(ha_api_call "states")"
+
+    echo "Derived memory source: \`/data/ha-context/rename_memory.json\`."
+    echo "This file is generated from Home Assistant registries on every context refresh; do not maintain a separate inventory file."
+    echo ""
+
+    jq -n \
+        --slurpfile devices "$device_registry" \
+        --slurpfile entities "$entity_registry" \
+        --argjson states "$(echo "$states" | jq '. // []' 2>/dev/null || echo '[]')" '
+        ($devices[0].data.devices // []) as $devices_list |
+        ($entities[0].data.entities // []) as $entities_list |
+        ($states | if type == "array" then . else [] end) as $states_list |
+        ($states_list | map({key:.entity_id,value:.}) | from_entries) as $state_map |
+        {
+          devices_total: ($devices_list | length),
+          devices_named_by_user: ([$devices_list[]? | select((.name_by_user // "") != "")] | length),
+          devices_with_canonical_name: ([$devices_list[]? | select(((.name_by_user // .name // "") | test("^\\[[^\\]]+\\] ")))] | length),
+          entities_total: ($entities_list | length),
+          entities_with_registry_name_override: ([$entities_list[]? | select((.name // "") != "")] | length),
+          entities_with_canonical_friendly_name: ([
+            $entities_list[]? as $entity |
+            (($state_map[$entity.entity_id].attributes.friendly_name // $entity.name // "") | select(test("^\\[[^\\]]+\\] ")))
+          ] | length),
+          disabled_entities: ([$entities_list[]? | select(.disabled_by != null)] | length)
+        } |
+        "- Devices: \(.devices_total) total, \(.devices_named_by_user) user-named, \(.devices_with_canonical_name) already canonical\n" +
+        "- Entities: \(.entities_total) total, \(.entities_with_registry_name_override) name overrides, \(.entities_with_canonical_friendly_name) canonical friendly names, \(.disabled_entities) disabled"
+    ' 2>/dev/null || echo "Unable to summarize rename memory."
+
+    echo ""
+    echo "Before proposing a rename, inspect the relevant entries in \`rename_memory.json\` and skip any device/entity that is already canonical unless the user explicitly asks to rename it again."
+}
+
 section_addon_logs() {
     if ! include_addon_logs; then
         echo "Add-on log sampling disabled."
@@ -393,6 +437,7 @@ You are running inside a Home Assistant add-on container.
 - `/config` is the mapped Home Assistant configuration directory.
 - `$CODEX_HOME/AGENTS.md` contains generated context for this installation.
 - `/data/ha-context/*.json` contains structured generated context for programmatic analysis.
+- `/data/ha-context/rename_memory.json` contains generated device/entity rename memory derived from HA registries.
 - `/data` persists across add-on restarts and updates.
 - `ha-context` refreshes live context.
 - `codex-ha doctor` checks auth, API access, MCP, skills, and safety options.
@@ -402,6 +447,7 @@ You are running inside a Home Assistant add-on container.
 
 - Treat this as a live home automation system.
 - Prefer reading and validating before editing.
+- Before renaming devices or entities, read `/data/ha-context/rename_memory.json` and skip entries that already follow the naming convention unless the user explicitly requested a second rename.
 - Use `ha-safe-edit plan <file> -- <command...>` before changing YAML or other `/config` files.
 - Apply only after user approval with `ha-safe-edit apply <plan_id>`.
 - Always store backups under `/data/safe-edit-backups` (or a subfolder inside it).
@@ -493,6 +539,10 @@ generate_agents_md() {
         echo ""
         section_recorder
         echo ""
+        echo "## Device And Entity Rename Memory"
+        echo ""
+        section_rename_memory
+        echo ""
         echo "## Recent Errors"
         echo ""
         section_recent_errors
@@ -533,7 +583,7 @@ generate_context_json() {
         --arg agents_md "$OUTPUT_FILE" \
         --arg context_detail_level "$(context_level)" \
         --arg include_addon_logs "$INCLUDE_ADDON_LOGS" \
-        '{generated_at:$generated_at,agents_md:$agents_md,context_detail_level:$context_detail_level,include_addon_logs:($include_addon_logs == "true"),files:{system:"system.json",entities:"entities.json",entity_summary:"entity_summary.json",entity_registry:"entity_registry.json",device_registry:"device_registry.json",area_registry:"area_registry.json",label_registry:"label_registry.json",addons:"addons.json",integrations:"integrations.json",automations_scripts_scenes:"automations_scripts_scenes.json",unavailable_entities:"unavailable_entities.json",repairs:"repairs.json"}}' \
+        '{generated_at:$generated_at,agents_md:$agents_md,context_detail_level:$context_detail_level,include_addon_logs:($include_addon_logs == "true"),files:{system:"system.json",entities:"entities.json",entity_summary:"entity_summary.json",entity_registry:"entity_registry.json",device_registry:"device_registry.json",area_registry:"area_registry.json",label_registry:"label_registry.json",rename_memory:"rename_memory.json",addons:"addons.json",integrations:"integrations.json",automations_scripts_scenes:"automations_scripts_scenes.json",unavailable_entities:"unavailable_entities.json",repairs:"repairs.json"}}' \
         > "${tmp_dir}/manifest.json"
 
     jq -n \
@@ -552,6 +602,110 @@ generate_context_json() {
     write_storage_json "/config/.storage/core.device_registry" "${tmp_dir}/device_registry.json"
     write_storage_json "/config/.storage/core.area_registry" "${tmp_dir}/area_registry.json"
     write_storage_json "/config/.storage/core.label_registry" "${tmp_dir}/label_registry.json"
+
+    jq -n \
+        --arg generated_at "$timestamp" \
+        --slurpfile devices "${tmp_dir}/device_registry.json" \
+        --slurpfile entities "${tmp_dir}/entity_registry.json" \
+        --slurpfile areas "${tmp_dir}/area_registry.json" \
+        --slurpfile labels "${tmp_dir}/label_registry.json" \
+        --slurpfile states "${tmp_dir}/entities.json" '
+        def registry_array($doc; $key):
+          if ($doc[0].data[$key]? | type) == "array" then $doc[0].data[$key] else [] end;
+        def state_array($doc):
+          if ($doc[0] | type) == "array" then $doc[0] else [] end;
+        def canonical_name:
+          test("^\\[[^\\]]+\\] ");
+
+        (registry_array($devices; "devices")) as $devices_list |
+        (registry_array($entities; "entities")) as $entities_list |
+        (registry_array($areas; "areas")) as $areas_list |
+        (registry_array($labels; "labels")) as $labels_list |
+        (state_array($states)) as $states_list |
+        ($states_list | map({key:.entity_id,value:.}) | from_entries) as $state_map |
+        ($areas_list | map({key:.id,value:.name}) | from_entries) as $area_names |
+        ($labels_list | map(select((.label_id // .id) != null) | {key:(.label_id // .id),value:{name:.name,icon:.icon,description:.description}}) | from_entries) as $label_map |
+        def label_details($ids):
+          [($ids // [])[] as $id | {id:$id} + ($label_map[$id] // {})];
+        def area_name($id):
+          if $id == null then null else ($area_names[$id] // $id) end;
+
+        {
+          generated_at: $generated_at,
+          source: "derived_from_home_assistant_registries",
+          guidance: {
+            purpose: "Runtime memory for Home Assistant device/entity naming. It replaces any manual inventory and is rebuilt from current HA registries.",
+            before_rename: "Read the matching device/entity entries and skip anything already canonical unless the user explicitly asks to rename it again.",
+            canonical_device_name: "[Area] Manufacturer Model [#N]",
+            canonical_entity_friendly_name: "[Area] Device name - Function, or [Area] Device name for the primary entity",
+            canonical_entity_id: "<domain>.<area_slug>_<function>[_<detail>]"
+          },
+          summary: {
+            devices_total: ($devices_list | length),
+            devices_named_by_user: ([$devices_list[]? | select((.name_by_user // "") != "")] | length),
+            devices_with_canonical_name: ([$devices_list[]? | select(((.name_by_user // .name // "") | canonical_name))] | length),
+            entities_total: ($entities_list | length),
+            entities_with_registry_name_override: ([$entities_list[]? | select((.name // "") != "")] | length),
+            entities_with_canonical_friendly_name: ([
+              $entities_list[]? as $entity |
+              (($state_map[$entity.entity_id].attributes.friendly_name // $entity.name // "") | select(canonical_name))
+            ] | length),
+            disabled_entities: ([$entities_list[]? | select(.disabled_by != null)] | length)
+          },
+          devices: [
+            $devices_list[]? |
+            {
+              device_id: .id,
+              name: (.name_by_user // .name // .model // .id),
+              registry_name: .name,
+              name_by_user: .name_by_user,
+              area_id: .area_id,
+              area_name: area_name(.area_id),
+              manufacturer: .manufacturer,
+              model: .model,
+              model_id: .model_id,
+              sw_version: .sw_version,
+              hw_version: .hw_version,
+              identifiers: (.identifiers // []),
+              connections: (.connections // []),
+              labels: (.labels // []),
+              label_details: label_details(.labels),
+              config_entries: (.config_entries // []),
+              via_device_id: .via_device_id,
+              is_canonical_name: ((.name_by_user // .name // "") | canonical_name),
+              skip_rename_by_default: ((.name_by_user // .name // "") | canonical_name)
+            }
+          ] | sort_by(.name // ""),
+          entities: [
+            $entities_list[]? as $entity |
+            ($state_map[$entity.entity_id] // {}) as $state |
+            ($state.attributes.friendly_name // $entity.name // $entity.original_name // "") as $friendly |
+            {
+              entity_id: $entity.entity_id,
+              unique_id: $entity.unique_id,
+              domain: ($entity.entity_id | split(".")[0]),
+              platform: $entity.platform,
+              device_id: $entity.device_id,
+              area_id: $entity.area_id,
+              area_name: area_name($entity.area_id),
+              labels: ($entity.labels // []),
+              label_details: label_details($entity.labels),
+              registry_name: $entity.name,
+              original_name: $entity.original_name,
+              friendly_name: $friendly,
+              has_entity_name: $entity.has_entity_name,
+              disabled_by: $entity.disabled_by,
+              hidden_by: $entity.hidden_by,
+              entity_category: $entity.entity_category,
+              device_class: ($state.attributes.device_class // $entity.device_class),
+              unit_of_measurement: $state.attributes.unit_of_measurement,
+              is_canonical_friendly_name: ($friendly | canonical_name),
+              has_registry_name_override: (($entity.name // "") != ""),
+              skip_rename_by_default: (($friendly | canonical_name) or ($entity.disabled_by != null))
+            }
+          ] | sort_by(.entity_id // "")
+        }
+    ' > "${tmp_dir}/rename_memory.json"
 
     if [ -n "$states" ] && echo "$states" | jq -e 'type == "array"' >/dev/null 2>&1; then
         echo "$states" | jq '

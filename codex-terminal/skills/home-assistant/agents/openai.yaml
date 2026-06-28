@@ -1,0 +1,7 @@
+interface:
+  display_name: "Home Assistant"
+  short_description: "Conventii si audit rapid pentru HA"
+  default_prompt: "Use $home-assistant to plan a safe Home Assistant change with the bundled naming conventions."
+
+policy:
+  allow_implicit_invocation: true

@@ -25,9 +25,10 @@ Add-on-ul pornește în `/config`, deci Codex lucrează direct cu fișierele tal
 - **Persistență completă** — autentificarea și configurarea Codex stau în `/data/.codex`, supraviețuiesc restart-urilor și update-urilor de add-on.
 - **Sesiuni `tmux`** — închizi sidebar-ul și revii la aceeași conversație, fără să pierzi contextul.
 - **Context Home Assistant generat automat** în `$CODEX_HOME/AGENTS.md` și `/data/ha-context/*.json`: sistem, entități, registries, integrări, automatizări, scripturi, scene, repairs, recorder, erori recente, logs add-on-uri.
+- **Memorie runtime pentru redenumiri** în `/data/ha-context/rename_memory.json`, derivată din registrele HA; Codex sare peste device-urile și entitățile deja aduse la convenție.
 - **Refresh automat de context** — se verifică periodic și la deschiderea terminalului; dacă e mai vechi de 30 minute (configurabil), se regenerează.
 - **Skill-uri Home Assistant integrate (în română):**
-  - `home-assistant` — umbrella skill cu index de rutare și fișiere pe topic (entități, devices/areas, automatizări, scripturi, helpers/scene, dashboards, template-uri, notificări, device control, refactoring, exemple) plus `inventory.yaml` ca sursă de adevăr.
+  - `home-assistant` — umbrella skill cu index de rutare, entrypoint-uri scurte pe topic, referințe detaliate încărcate la nevoie și scripturi pentru auditul memoriei de redenumiri.
   - `home-assistant-instance` — generat automat la fiecare boot de `ha-context`, conține flag-urile de runtime și safety ale instalării tale.
 - **Integrare MCP opțională** (`ha-mcp` community, server oficial HA MCP, ambele, sau dezactivat).
 - **Diagnostic** prin `codex-ha doctor`.
@@ -150,7 +151,7 @@ websocat ws://supervisor/core/api/websocket
 
 ## Cum redenumești device-uri, entități și ajustezi automatizările
 
-Skill-urile bundlate (`home-assistant/SKILL.md` + topic files) definesc convenții stricte de denumire. **Când îi ceri lui Codex să redenumească ceva, aplică automat aceste reguli** — nu trebuie să i le repeți. Conversația cu Codex se desfășoară în română.
+Skill-urile bundlate (`home-assistant/SKILL.md` + topic entrypoints + `references/`) definesc convenții stricte de denumire. **Când îi ceri lui Codex să redenumească ceva, aplică automat aceste reguli** — nu trebuie să i le repeți. Conversația cu Codex se desfășoară în română.
 
 ### Convențiile pe scurt
 
@@ -175,18 +176,18 @@ Detalii complete: deschide skill-urile direct (`cat $CODEX_HOME/skills/home-assi
 ```
 
 Codex execută automat:
-1. Citește `inventory.yaml` ca să vadă device-urile existente, area-urile, labels și `change_log`.
+1. Citește `/data/ha-context/rename_memory.json` ca să vadă device-urile existente, area-urile, labels și ce respectă deja convenția.
 2. Citește `ha-devices-areas.md` pentru regulile de format (`[Area] Producător Model [#N]`).
 3. Propune un plan cu device-urile afectate (ex: `aqara_temperature_sensor_5b1c` → `[Dormitor #1] Aqara T1`).
 4. Aplică modificările prin Settings API (WebSocket) sau prin editare în `core.device_registry` cu backup `ha-safe-edit`.
 5. Asignează area corect și label-urile potrivite (`temperatura`, `umiditate` etc.).
-6. Actualizează `inventory.yaml` cu o intrare nouă în `change_log:` și după caz în `devices:`.
+6. Rulează `ha-context --force` și verifică `rename_memory.json`, ca următoarea sesiune să sară peste elementele deja redenumite.
 
 Alte prompt-uri tipice:
 
 ```text
 > Redenumește device-ul cu entity_id sensor.foo_temperature conform convenției.
-> Toate device-urile fără area asignată — citește inventory.yaml și asignează area corectă.
+> Toate device-urile fără area asignată — citește rename_memory.json și asignează area corectă.
 > Verifică labels-urile pe device-urile din curte; adaugă "exterior" celor care lipsesc.
 > Găsește toate device-urile cu sufixe random (_a1b2c3) în nume și propune redenumiri.
 ```
@@ -301,13 +302,14 @@ Codex aplică conventiile din `ha-notifications.md` (`notify.send_message`, cana
 Pașii pe care Codex îi urmează automat la **orice** modificare tangibilă (vezi `home-assistant/SKILL.md` → "Reguli obligatorii"):
 
 1. Identifică tipul elementului atins (device / entitate / automatizare / script / scenă / helper / dashboard / template / notificare).
-2. Citește fișierul `ha-*.md` corespunzător + `inventory.yaml` dacă atinge device sau entitate.
+2. Citește fișierul `ha-*.md` corespunzător + `/data/ha-context/rename_memory.json` dacă atinge device sau entitate.
 3. Aplică toate convențiile integral (limbă, casing, slug-uri, structură, prefix `friendly_name`, `mode`, etc.).
-4. Întreabă utilizatorul dacă o convenție pare neclară sau lipsește — **nu inventează**.
-5. Folosește `ha-safe-edit` (backup + validare) înainte de orice edit pe `/config`.
-6. La final, actualizează `inventory.yaml` cu intrare nouă în `change_log:` și după caz în `devices:`.
+4. Sare peste device-urile și entitățile deja canonical, cu excepția cazului în care ceri explicit redenumirea lor.
+5. Întreabă utilizatorul dacă o convenție pare neclară sau lipsește — **nu inventează**.
+6. Folosește `ha-safe-edit` (backup + validare) înainte de orice edit pe `/config`.
+7. La final, rulează `ha-context --force` ca memoria runtime să fie actualizată.
 
-Dacă vezi că Codex sare peste un pas (rar, dar se întâmplă în conversații lungi), spune-i direct: `Aplică convențiile din ha-entities.md` sau `Actualizează inventory.yaml`.
+Dacă vezi că Codex sare peste un pas (rar, dar se întâmplă în conversații lungi), spune-i direct: `Aplică convențiile din ha-entities.md` sau `Regenerează contextul cu ha-context --force`.
 
 ## Contextul Home Assistant
 
@@ -318,6 +320,7 @@ La start, add-on-ul generează un context Home Assistant pentru Codex în `$CODE
 - Lista add-on-urilor instalate (slug, versiune, stare).
 - Integrări configurate (config entries).
 - Automatizări, scripturi, scene definite (cu alias-uri și stare enabled/disabled).
+- Memorie runtime pentru device-uri și entități redenumite (`rename_memory.json`).
 - Entități `unavailable` sau `unknown` (semnal pentru integrări sparte).
 - Probleme din Repairs și System Health.
 - Statistici recorder (mărime DB, oldest entry).
@@ -591,7 +594,7 @@ codex-terminal/
       ha-automations.md                          # automatizări (mode, trigger IDs, choose, repeat)
       ha-dashboards.md                           # views, cards, styling, custom cards
       ha-device-control.md                       # service calls, ZHA/Z2M, lights/climate/cover
-      ha-devices-areas.md                        # device names, areas, labels, inventory
+      ha-devices-areas.md                        # device names, areas, labels, rename memory
       ha-entities.md                             # vocabular RO funcții, entity IDs, device_class
       ha-examples.md                             # exemple complete end-to-end
       ha-helpers-scenes.md                       # helpers (boolean/number/timer/etc.), scene
@@ -599,7 +602,15 @@ codex-terminal/
       ha-refactoring.md                          # redenumire entități, storage dashboards
       ha-scripts-steps.md                        # scripts, fields, sequence, variables
       ha-templates.md                            # Jinja2, template sensors, performanță
-      inventory.yaml                             # sursa de adevăr pentru device-uri/entități
+      references/                                # documentația detaliată încărcată doar la nevoie
+        core-rules.md                            # reguli comune cross-topic
+        rename-memory.md                         # ghid /data/ha-context/rename_memory.json
+        ha-version-notes.md                      # note dependente de versiunea Home Assistant
+        ha-*.md                                  # referințele complete pentru fiecare topic
+      scripts/
+        ha_rename_audit.py                       # listează rapid ce mai trebuie redenumit
+        ha_reference_scan.py                     # caută referințe entity_id în /config
+        ha_skill_lint.py                         # lint intern pentru skill-ul HA
 ```
 
 ## Licență

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+### Skills
+
+- Replace the manual Home Assistant `inventory.yaml` workflow with generated runtime rename memory at `/data/ha-context/rename_memory.json`, derived from HA device/entity/area/label registries and current states.
+- Update bundled Home Assistant skills and task-picker prompts to skip already-canonical devices/entities by default and refresh context with `ha-context --force` after renames.
+- Rework the bundled `home-assistant` skill for progressive disclosure: compact topic entrypoints, detailed `references/`, shared core rules, version notes, UI metadata, and helper scripts for rename-memory and entity-reference audits.
+- Align notification examples on `notify.send_message`, keep platform-specific notify services as fallback only, and replace the legacy template-sensor performance example with modern `template:` syntax.
+
+### Dependencies
+
+- Upgrade the bundled Codex CLI from `0.136.0` to `0.142.3` (latest stable on npm).
+
 ## 1.1.10
 
 ### UX
