@@ -26,17 +26,17 @@ assert_enabled() {
     file_tools="$(option enable_file_tools true)"
 
     if [ "$readonly_mode" = "true" ]; then
-        echo "readonly_mode is enabled; refusing to edit" >&2
+        echo "readonly_mode este activ; editarea este oprită" >&2
         exit 1
     fi
 
     if [ "$yaml_editing" != "true" ]; then
-        echo "enable_yaml_editing is false; refusing to edit" >&2
+        echo "enable_yaml_editing este dezactivat; fișierele YAML nu pot fi editate" >&2
         exit 1
     fi
 
     if [ "$file_tools" != "true" ]; then
-        echo "enable_file_tools is false; refusing file operation" >&2
+        echo "enable_file_tools este dezactivat; operația pe fișier este oprită" >&2
         exit 1
     fi
 }
@@ -46,7 +46,7 @@ backup_file() {
     local timestamp dest
 
     if [ ! -f "$file" ]; then
-        echo "File does not exist: $file" >&2
+        echo "Fișierul nu există: $file" >&2
         exit 1
     fi
 
@@ -101,7 +101,7 @@ PY
 
 ha_check_config() {
     if [ -z "$TOKEN" ]; then
-        echo "WARN: SUPERVISOR_TOKEN not set; skipping Home Assistant config check" >&2
+        echo "AVERTISMENT: SUPERVISOR_TOKEN nu este setat; verificarea Home Assistant este omisă" >&2
         return 0
     fi
 
@@ -117,25 +117,25 @@ safe_edit() {
     shift || true
 
     if [ -z "$file" ]; then
-        echo "Usage: ha-safe-edit <file> -- <command...>" >&2
+        echo "Utilizare: ha-safe-edit <fișier> -- <comandă...>" >&2
         exit 1
     fi
 
     if [ "${1:-}" != "--" ]; then
-        echo "Usage: ha-safe-edit <file> -- <command...>" >&2
+        echo "Utilizare: ha-safe-edit <fișier> -- <comandă...>" >&2
         exit 1
     fi
     shift
 
     if [ "$#" -eq 0 ]; then
-        echo "No edit command supplied" >&2
+        echo "Nu ai indicat comanda de editare" >&2
         exit 1
     fi
 
     assert_enabled
     local backup
     backup="$(backup_file "$file")"
-    echo "Backup: $backup"
+    echo "Copie de siguranță: $backup"
 
     "$@"
 
@@ -148,20 +148,20 @@ safe_plan() {
     shift || true
 
     if [ -z "$file" ] || [ "${1:-}" != "--" ]; then
-        echo "Usage: ha-safe-edit plan <file> -- <command...>" >&2
+        echo "Utilizare: ha-safe-edit plan <fișier> -- <comandă...>" >&2
         exit 1
     fi
     shift
 
     if [ "$#" -eq 0 ]; then
-        echo "No edit command supplied" >&2
+        echo "Nu ai indicat comanda de editare" >&2
         exit 1
     fi
 
     assert_enabled
 
     if [ ! -f "$file" ]; then
-        echo "File does not exist: $file" >&2
+        echo "Fișierul nu există: $file" >&2
         exit 1
     fi
 
@@ -207,13 +207,13 @@ safe_plan() {
         > "$metadata"
 
     echo "Plan: $plan_id"
-    echo "File: $file"
-    echo "Backup: $backup"
-    echo "Diff: $diff_file"
+    echo "Fișier: $file"
+    echo "Copie de siguranță: $backup"
+    echo "Diferențe: $diff_file"
     echo ""
     cat "$diff_file"
     echo ""
-    echo "Apply with: ha-safe-edit apply $plan_id"
+    echo "Aplică prin: ha-safe-edit apply $plan_id"
 }
 
 safe_apply_plan() {
@@ -221,7 +221,7 @@ safe_apply_plan() {
     local plan_dir metadata file staged original_hash current_hash backup
 
     if [ -z "$plan_id" ]; then
-        echo "Usage: ha-safe-edit apply <plan_id>" >&2
+        echo "Utilizare: ha-safe-edit apply <plan_id>" >&2
         exit 1
     fi
 
@@ -232,7 +232,7 @@ safe_apply_plan() {
     staged="${plan_dir}/staged"
 
     if [ ! -f "$metadata" ] || [ ! -f "$staged" ]; then
-        echo "Plan not found or incomplete: $plan_id" >&2
+        echo "Planul nu există sau este incomplet: $plan_id" >&2
         exit 1
     fi
 
@@ -240,15 +240,15 @@ safe_apply_plan() {
     original_hash="$(jq -r '.original_hash' "$metadata")"
 
     if [ ! -f "$file" ]; then
-        echo "Target file no longer exists: $file" >&2
+        echo "Fișierul țintă nu mai există: $file" >&2
         exit 1
     fi
 
     current_hash="$(file_sha256 "$file")"
     if [ "$current_hash" != "$original_hash" ]; then
-        echo "Refusing to apply: target changed since plan was created" >&2
-        echo "Expected: $original_hash" >&2
-        echo "Current:  $current_hash" >&2
+        echo "Aplicarea este oprită: fișierul s-a schimbat după crearea planului" >&2
+        echo "Valoare așteptată: $original_hash" >&2
+        echo "Valoare curentă:   $current_hash" >&2
         exit 1
     fi
 
@@ -263,14 +263,14 @@ safe_apply_plan() {
         "$metadata" > "${metadata}.tmp"
     mv "${metadata}.tmp" "$metadata"
 
-    echo "Applied plan: $plan_id"
-    echo "File: $file"
-    echo "Backup: $backup"
+    echo "Plan aplicat: $plan_id"
+    echo "Fișier: $file"
+    echo "Copie de siguranță: $backup"
 }
 
 list_plans() {
     if [ ! -d "$PLAN_ROOT" ]; then
-        echo "No plans found."
+        echo "Nu există planuri."
         return 0
     fi
 
@@ -284,7 +284,7 @@ show_plan() {
     local plan_dir="${PLAN_ROOT}/${plan_id}"
 
     if [ -z "$plan_id" ] || [ ! -f "${plan_dir}/metadata.json" ]; then
-        echo "Usage: ha-safe-edit show-plan <plan_id>" >&2
+        echo "Utilizare: ha-safe-edit show-plan <plan_id>" >&2
         exit 1
     fi
 
@@ -295,16 +295,16 @@ show_plan() {
 
 usage() {
     cat <<'USAGE'
-Usage:
-  ha-safe-edit <file> -- <command...>
-  ha-safe-edit plan <file> -- <command...>
+Utilizare:
+  ha-safe-edit <fișier> -- <comandă...>
+  ha-safe-edit plan <fișier> -- <comandă...>
   ha-safe-edit apply <plan_id>
   ha-safe-edit list-plans
   ha-safe-edit show-plan <plan_id>
-  ha-safe-edit backup <file>
-  ha-safe-edit check [file]
+  ha-safe-edit backup <fișier>
+  ha-safe-edit check [fișier]
 
-Examples:
+Exemple:
   ha-safe-edit /config/automations.yaml -- sh -c 'yq -i ". += []" /config/automations.yaml'
   ha-safe-edit plan /config/automations.yaml -- sh -c 'yq -i ". += []" /config/automations.yaml'
   ha-safe-edit apply 20260528-121314-automations.yaml

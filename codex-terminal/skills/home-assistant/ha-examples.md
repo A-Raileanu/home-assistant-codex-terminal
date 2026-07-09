@@ -1,9 +1,9 @@
 ---
 name: ha-examples
-description: Entry point rapid pentru exemple YAML Home Assistant end-to-end si pattern-uri compuse.
+description: Punct de pornire pentru exemple YAML Home Assistant complete și modele care combină mai multe componente.
 ---
 
-# Exemple — Entry Point
+# Exemple — Punct de pornire
 
 Nu citi exemplele din reflex. Deschide [references/ha-examples.md](references/ha-examples.md) doar cand utilizatorul cere un exemplu complet sau cand un pattern compus este mai sigur decat instructiuni abstracte.
 
@@ -12,7 +12,7 @@ Nu citi exemplele din reflex. Deschide [references/ha-examples.md](references/ha
 - Automatizare completa cu trigger, conditii, actiuni si notificare.
 - Refactoring end-to-end al unui device/entitati.
 - Pattern multi-component: helper + automatizare + script + dashboard.
-- Exemplu de naming complet pentru device si entitati.
+- Exemplu de denumire complet pentru device si entitati.
 
 ## Reguli Inainte De A Copia Un Exemplu
 
@@ -23,4 +23,4 @@ Nu citi exemplele din reflex. Deschide [references/ha-examples.md](references/ha
 
 ## TL;DR
 
-Exemplele sunt biblioteca de pattern-uri, nu primul fisier de citit.
+Exemplele sunt biblioteca de modele, nu primul fisier de citit.

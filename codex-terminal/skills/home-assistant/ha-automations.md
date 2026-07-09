@@ -1,13 +1,13 @@
 ---
 name: ha-automations
-description: Entry point rapid pentru automatizari Home Assistant: alias romanesc, mode, trigger IDs, conditii native, wait/repeat/choose si dezactivare.
+description: Punct de pornire pentru automatizări Home Assistant: nume românești, mod de rulare, declanșatoare, condiții native, așteptare, repetare, alegere și dezactivare.
 ---
 
-# Automatizari — Entry Point
+# Automatizari — Punct de pornire
 
 Citeste acest fisier pentru decizia rapida. Pentru detalii complete si exemple, deschide doar sectiunea necesara din [references/ha-automations.md](references/ha-automations.md).
 
-## Fast Path
+## Pași rapizi
 
 1. Alias in romana: `[Zona] Declansator - efect`, maximum aproximativ 60 caractere.
 2. Adauga `description:` cand automatizarea are logica multipla, dependente externe sau risc de confuzie.
@@ -26,12 +26,12 @@ Citeste acest fisier pentru decizia rapida. Pentru detalii complete si exemple, 
 
 | Ai nevoie de | Sectiune |
 |---|---|
-| Format alias, `description`, `mode`, trigger IDs | [references/ha-automations.md](references/ha-automations.md#automatizari) |
-| Conditii native si pattern-uri | [references/ha-automations.md](references/ha-automations.md#bune-practici-si-pattern-uri) |
-| Tipuri de triggere | [references/ha-automations.md](references/ha-automations.md#tipuri-de-declansatori-triggers) |
-| `wait`, `repeat`, `choose`, `continue_on_error` | [references/ha-automations.md](references/ha-automations.md#actiuni-de-asteptare-wait) |
-| Dezactivare temporara/permanenta | [references/ha-automations.md](references/ha-automations.md#dezactivarea-automatizarilor) |
-| Anti-pattern-uri | [references/ha-automations.md](references/ha-automations.md#anti-pattern-uri) |
+| Format alias, `description`, `mode`, identificatori de declanșator | [references/ha-automations.md](references/ha-automations.md#automatizări) |
+| Conditii native si modele | [references/ha-automations.md](references/ha-automations.md#bune-practici-și-modele) |
+| Tipuri de triggere | [references/ha-automations.md](references/ha-automations.md#tipuri-de-declanșatori-triggers) |
+| `wait`, `repeat`, `choose`, `continue_on_error` | [references/ha-automations.md](references/ha-automations.md#acțiuni-de-așteptare-wait) |
+| Dezactivare temporara/permanenta | [references/ha-automations.md](references/ha-automations.md#dezactivarea-automatizărilor) |
+| Anti-modele | [references/ha-automations.md](references/ha-automations.md#anti-modele) |
 | Comportament nou sau versionat HA | [references/ha-version-notes.md](references/ha-version-notes.md) |
 
 ## TL;DR

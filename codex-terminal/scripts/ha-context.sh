@@ -43,11 +43,11 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help)
-            echo "Usage: ha-context [--force] [--full] [--refresh-minutes MINUTES] [--output FILE]"
+            echo "Utilizare: ha-context [--force] [--full] [--refresh-minutes MINUTES] [--output FILE]"
             exit 0
             ;;
         *)
-            echo "Unknown option: $1" >&2
+            echo "Opțiune necunoscută: $1" >&2
             exit 1
             ;;
     esac
@@ -67,13 +67,13 @@ ha_api_call() {
 
 check_prerequisites() {
     if [ -z "${SUPERVISOR_TOKEN:-}" ]; then
-        echo "SUPERVISOR_TOKEN is not set; this must run inside a Home Assistant add-on." >&2
+        echo "SUPERVISOR_TOKEN nu este setat; comanda trebuie rulată în aplicația Home Assistant." >&2
         exit 1
     fi
 
     for cmd in curl jq; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
-            echo "Required command not found: $cmd" >&2
+            echo "Lipsește comanda necesară: $cmd" >&2
             exit 1
         fi
     done
@@ -173,12 +173,12 @@ section_system_info() {
     timezone="$(echo "$ha_config" | jq -r '.time_zone // empty' 2>/dev/null)"
     location_name="$(echo "$ha_config" | jq -r '.location_name // empty' 2>/dev/null)"
 
-    [ -n "$ha_version" ] && echo "- Home Assistant: ${ha_version}" || echo "- Home Assistant: unavailable"
-    [ -n "$machine" ] && echo "- Machine: ${machine}"
+    [ -n "$ha_version" ] && echo "- Home Assistant: ${ha_version}" || echo "- Home Assistant: indisponibil"
+    [ -n "$machine" ] && echo "- Sistem: ${machine}"
     [ -n "$ha_os" ] && echo "- OS: ${ha_os}"
-    [ -n "$hostname" ] && echo "- Hostname: ${hostname}"
-    [ -n "$location_name" ] && echo "- Location: ${location_name}"
-    [ -n "$timezone" ] && echo "- Timezone: ${timezone}"
+    [ -n "$hostname" ] && echo "- Nume gazdă: ${hostname}"
+    [ -n "$location_name" ] && echo "- Locație: ${location_name}"
+    [ -n "$timezone" ] && echo "- Fus orar: ${timezone}"
 }
 
 section_entity_summary() {
@@ -186,14 +186,14 @@ section_entity_summary() {
     states="$(ha_api_call "states")"
 
     if [ -z "$states" ] || ! echo "$states" | jq -e '.' >/dev/null 2>&1; then
-        echo "Unable to retrieve entity states."
+        echo "Stările entităților nu au putut fi citite."
         return
     fi
 
     local total
     total="$(echo "$states" | jq 'length')"
 
-    echo "| Domain | Count |"
+    echo "| Domeniu | Număr |"
     echo "|--------|-------|"
     echo "$states" | jq -r '
         [.[].entity_id | split(".")[0]] | group_by(.) |
@@ -202,11 +202,11 @@ section_entity_summary() {
         .[] | "| \(.domain) | \(.count) |"
     ' 2>/dev/null
     echo ""
-    echo "Total: ${total} entities"
+    echo "Total: ${total} entități"
 
     if [ "$(context_level)" = "full" ]; then
         echo ""
-        echo "### Entity Details"
+        echo "### Detalii despre entități"
         echo "$states" | jq -r '
             group_by(.entity_id | split(".")[0])[] |
             "#### " + (.[0].entity_id | split(".")[0]) + "\n" +
@@ -220,7 +220,7 @@ section_addons() {
     addons_data="$(api_call "addons")"
 
     if [ -z "$addons_data" ] || ! echo "$addons_data" | jq -e '.data.addons' >/dev/null 2>&1; then
-        echo "Unable to retrieve add-on information."
+        echo "Informațiile despre aplicații nu au putut fi citite."
         return
     fi
 
@@ -236,7 +236,7 @@ section_recent_errors() {
     error_log="$(ha_api_call "error_log")"
 
     if [ -z "$error_log" ] || [ "$error_log" = "\"\"" ]; then
-        echo "No recent errors."
+        echo "Nu există erori recente."
         return
     fi
 
@@ -250,7 +250,7 @@ section_integrations() {
     config_entries="$(ha_api_call "config/config_entries/entry")"
 
     if [ -z "$config_entries" ] || ! echo "$config_entries" | jq -e '.' >/dev/null 2>&1; then
-        echo "Unable to retrieve integration entries."
+        echo "Integrările nu au putut fi citite."
         return
     fi
 
@@ -271,12 +271,12 @@ section_automation_inventory() {
     states="$(ha_api_call "states")"
 
     if [ -z "$states" ] || ! echo "$states" | jq -e '.' >/dev/null 2>&1; then
-        echo "Unable to retrieve automation/script/scene inventory."
+        echo "Automatizările, scripturile și scenele nu au putut fi citite."
         return
     fi
 
     if is_summary_mode; then
-        echo "Summary mode enabled; skipping automation/script/scene inventory."
+        echo "Modul rezumat este activ; lista automatizărilor, scripturilor și scenelor este omisă."
         return
     fi
 
@@ -293,18 +293,18 @@ section_unavailable_entities() {
     states="$(ha_api_call "states")"
 
     if [ -z "$states" ] || ! echo "$states" | jq -e '.' >/dev/null 2>&1; then
-        echo "Unable to retrieve entity states."
+        echo "Stările entităților nu au putut fi citite."
         return
     fi
 
     if is_summary_mode; then
-        echo "Summary mode enabled; skipping unavailable/unknown entity details."
+        echo "Modul rezumat este activ; detaliile entităților indisponibile sunt omise."
         return
     fi
 
     local count
     count="$(echo "$states" | jq '[.[] | select(.state == "unavailable" or .state == "unknown")] | length')"
-    echo "Total unavailable/unknown: ${count}"
+    echo "Total indisponibile sau necunoscute: ${count}"
 
     echo "$states" | jq -r '
         [.[] | select(.state == "unavailable" or .state == "unknown")] |
@@ -320,16 +320,16 @@ section_repairs() {
     repairs="$(api_call "resolution/info")"
 
     if [ -z "$repairs" ] || ! echo "$repairs" | jq -e '.data' >/dev/null 2>&1; then
-        echo "Unable to retrieve repairs/issues."
+        echo "Reparațiile și problemele nu au putut fi citite."
         return
     fi
 
     echo "$repairs" | jq -r '
         .data |
-        "- Unsupported: \((.unsupported // []) | length)\n" +
-        "- Unhealthy: \((.unhealthy // []) | length)\n" +
-        "- Suggestions: \((.suggestions // []) | length)\n" +
-        "- Issues: \((.issues // []) | length)"
+        "- Nesuportate: \((.unsupported // []) | length)\n" +
+        "- Cu probleme: \((.unhealthy // []) | length)\n" +
+        "- Sugestii: \((.suggestions // []) | length)\n" +
+        "- Probleme: \((.issues // []) | length)"
     ' 2>/dev/null
 }
 
@@ -339,9 +339,9 @@ section_recorder() {
     if [ -f "$db_path" ]; then
         local size
         size="$(du -h "$db_path" 2>/dev/null | awk '{print $1}')"
-        echo "- Recorder database: ${db_path} (${size})"
+        echo "- Baza de date Recorder: ${db_path} (${size})"
     else
-        echo "- Recorder database not found at ${db_path}"
+        echo "- Baza de date Recorder nu există în ${db_path}"
     fi
 }
 
@@ -351,14 +351,14 @@ section_rename_memory() {
     local states
 
     if [ ! -f "$entity_registry" ] || [ ! -f "$device_registry" ]; then
-        echo "Registry files are not available yet."
+        echo "Fișierele registrelor nu sunt disponibile încă."
         return
     fi
 
     states="$(ha_api_call "states")"
 
-    echo "Derived memory source: \`/data/ha-context/rename_memory.json\`."
-    echo "This file is generated from Home Assistant registries on every context refresh; do not maintain a separate inventory file."
+    echo "Sursa memoriei: \`/data/ha-context/rename_memory.json\`."
+    echo "Fișierul este generat din registrele Home Assistant la fiecare actualizare; nu păstra un inventar separat."
     echo ""
 
     jq -n \
@@ -381,17 +381,17 @@ section_rename_memory() {
           ] | length),
           disabled_entities: ([$entities_list[]? | select(.disabled_by != null)] | length)
         } |
-        "- Devices: \(.devices_total) total, \(.devices_named_by_user) user-named, \(.devices_with_canonical_name) already canonical\n" +
-        "- Entities: \(.entities_total) total, \(.entities_with_registry_name_override) name overrides, \(.entities_with_canonical_friendly_name) canonical friendly names, \(.disabled_entities) disabled"
-    ' 2>/dev/null || echo "Unable to summarize rename memory."
+        "- Dispozitive: \(.devices_total) total, \(.devices_named_by_user) denumite de utilizator, \(.devices_with_canonical_name) deja corecte\n" +
+        "- Entități: \(.entities_total) total, \(.entities_with_registry_name_override) cu nume suprascris, \(.entities_with_canonical_friendly_name) cu nume corect, \(.disabled_entities) dezactivate"
+    ' 2>/dev/null || echo "Memoria de redenumire nu a putut fi rezumată."
 
     echo ""
-    echo "Before proposing a rename, inspect the relevant entries in \`rename_memory.json\` and skip any device/entity that is already canonical unless the user explicitly asks to rename it again."
+    echo "Înainte să propui o redenumire, verifică elementele relevante din \`rename_memory.json\` și sari peste dispozitivele sau entitățile deja corecte, dacă utilizatorul nu cere explicit altceva."
 }
 
 section_addon_logs() {
     if ! include_addon_logs; then
-        echo "Add-on log sampling disabled."
+        echo "Citirea jurnalelor aplicațiilor este dezactivată."
         return
     fi
 
@@ -399,7 +399,7 @@ section_addon_logs() {
     addons_data="$(api_call "addons")"
 
     if [ -z "$addons_data" ] || ! echo "$addons_data" | jq -e '.data.addons' >/dev/null 2>&1; then
-        echo "Unable to retrieve add-on logs."
+        echo "Jurnalele aplicațiilor nu au putut fi citite."
         return
     fi
 
@@ -425,67 +425,67 @@ write_skill() {
     skill_template="$(cat <<'SKILL'
 ---
 name: home-assistant-instance
-description: "Per-installation runtime configuration and safety flags for this Home Assistant instance: paths, readonly mode, device control, backup policy."
+description: "Configurarea și regulile de siguranță pentru această instalare Home Assistant: căi, mod doar pentru citire, controlul dispozitivelor și copii de siguranță."
 ---
 
-# Home Assistant Instance
+# Instanța Home Assistant
 
-You are running inside a Home Assistant add-on container.
+Rulezi în containerul aplicației Home Assistant.
 
-## Local Paths
+## Căi locale
 
-- `/config` is the mapped Home Assistant configuration directory.
-- `$CODEX_HOME/AGENTS.md` contains generated context for this installation.
-- `/data/ha-context/*.json` contains structured generated context for programmatic analysis.
-- `/data/ha-context/rename_memory.json` contains generated device/entity rename memory derived from HA registries.
-- `/data` persists across add-on restarts and updates.
-- `ha-context` refreshes live context.
-- `codex-ha doctor` checks auth, API access, MCP, skills, and safety options.
-- `ha-safe-edit plan` stages edits with a diff; `ha-safe-edit apply` applies an approved plan.
+- `/config` este directorul de configurare Home Assistant.
+- `$CODEX_HOME/AGENTS.md` conține datele generate pentru această instalare.
+- `/data/ha-context/*.json` conține date structurate pentru analiză.
+- `/data/ha-context/rename_memory.json` conține memoria de redenumire creată din registrele Home Assistant.
+- `/data` se păstrează după restarturi și actualizări.
+- `ha-context` actualizează datele instalației.
+- `codex-ha doctor` verifică autentificarea, API-ul, MCP, skill-urile și siguranța.
+- `ha-safe-edit plan` pregătește modificările și diferențele; `ha-safe-edit apply` aplică planul aprobat.
 
-## Safety
+## Siguranță
 
-- Treat this as a live home automation system.
-- Prefer reading and validating before editing.
-- Before renaming devices or entities, read `/data/ha-context/rename_memory.json` and skip entries that already follow the naming convention unless the user explicitly requested a second rename.
-- Use `ha-safe-edit plan <file> -- <command...>` before changing YAML or other `/config` files.
-- Apply only after user approval with `ha-safe-edit apply <plan_id>`.
-- Always store backups under `/data/safe-edit-backups` (or a subfolder inside it).
-- Do not write backup files next to source files in `/config` (no inline `.bak` files).
-- Keep backup paths in your final response.
+- Tratează instalația ca pe un sistem de automatizare activ.
+- Citește și verifică înainte să editezi.
+- Înainte de redenumiri, citește `/data/ha-context/rename_memory.json` și sari peste elementele deja corecte, dacă utilizatorul nu cere explicit altceva.
+- Folosește `ha-safe-edit plan <fișier> -- <comandă...>` înainte să schimbi YAML sau alte fișiere din `/config`.
+- Aplică numai după aprobarea utilizatorului, cu `ha-safe-edit apply <plan_id>`.
+- Păstrează copiile de siguranță în `/data/safe-edit-backups` sau într-un subdirector.
+- Nu scrie copii de siguranță lângă fișierele sursă din `/config` și nu crea fișiere `.bak` acolo.
+- Include căile copiilor de siguranță în răspunsul final.
 - `readonly_mode`: __READONLY_MODE__
 - `enable_device_control`: __ENABLE_DEVICE_CONTROL__
 - `require_backup_before_edit`: __REQUIRE_BACKUP__
 - `codex_full_permissions`: __CODEX_FULL_PERMISSIONS__
-- Treat device control as opt-in. Avoid service calls unless the user explicitly requested them.
-- Explain device-control side effects before issuing service calls.
-- Never edit `.storage/` directly unless the user explicitly accepts the risk and no API path exists.
+- Controlează dispozitive numai la cererea explicită a utilizatorului.
+- Explică efectele înainte să apelezi servicii care controlează dispozitive.
+- Nu edita direct `.storage/` decât dacă utilizatorul acceptă explicit riscul și nu există o cale prin API.
 
-## APIs
+## API-uri
 
-- Supervisor API base: `http://supervisor`
-- Core API base: `http://supervisor/core/api`
-- Core WebSocket: `ws://supervisor/core/api/websocket` (auth via first JSON message `{"type":"auth","access_token":"$SUPERVISOR_TOKEN"}`)
-- Use `Authorization: Bearer $SUPERVISOR_TOKEN` for HTTP.
-- The `home-assistant` MCP server may be available through Codex.
+- Baza API Supervisor: `http://supervisor`
+- Baza API Core: `http://supervisor/core/api`
+- WebSocket Core: `ws://supervisor/core/api/websocket`; autentificarea este primul mesaj JSON.
+- Pentru HTTP, folosește `Authorization: Bearer $SUPERVISOR_TOKEN`.
+- Serverul MCP `home-assistant` poate fi disponibil în Codex.
 
-## Useful Commands
+## Comenzi utile
 
 ```bash
 ha-context
 codex-ha doctor
 ha-safe-edit check
-ha-safe-edit plan /config/automations.yaml -- sh -c 'edit command'
+ha-safe-edit plan /config/automations.yaml -- sh -c 'comandă de editare'
 ha-safe-edit apply <plan_id>
 codex mcp list
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/info
 curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/api/states
-websocat ws://supervisor/core/api/websocket   # send {"type":"auth","access_token":"$SUPERVISOR_TOKEN"} first
+websocat ws://supervisor/core/api/websocket   # trimite întâi mesajul de autentificare
 ```
 
-## Related Skills
+## Skill-uri asociate
 
-See the bundled `home-assistant` skill (`$CODEX_HOME/skills/home-assistant/SKILL.md`) for the topic-focused routing table covering entities, devices/areas, automations, scripts, helpers/scenes, dashboards, templates, notifications, device control, refactoring, and examples.
+Vezi skill-ul `home-assistant` (`$CODEX_HOME/skills/home-assistant/SKILL.md`) pentru entități, dispozitive și camere, automatizări, scripturi, elemente ajutătoare și scene, panouri, șabloane, notificări, controlul dispozitivelor, refactorizare și exemple.
 SKILL
 )"
     skill_template="${skill_template//__READONLY_MODE__/${readonly_mode}}"
@@ -502,36 +502,36 @@ generate_agents_md() {
     tmp_file="$(mktemp "${OUTPUT_FILE}.XXXXXX")"
 
     {
-        echo "# Home Assistant Context"
+        echo "# Date Home Assistant"
         echo ""
-        echo "Auto-generated by the Codex Terminal add-on. Run \`ha-context\` to refresh."
-        echo "Last updated: ${timestamp}"
+        echo "Generat automat de Codex Terminal. Rulează \`ha-context\` pentru actualizare."
+        echo "Ultima actualizare: ${timestamp}"
         echo ""
-        echo "## System"
+        echo "## Sistem"
         echo ""
         section_system_info
         echo ""
-        echo "## Entities"
+        echo "## Entități"
         echo ""
         section_entity_summary
         echo ""
-        echo "## Installed Add-ons"
+        echo "## Aplicații instalate"
         echo ""
         section_addons
         echo ""
-        echo "## Integrations"
+        echo "## Integrări"
         echo ""
         section_integrations
         echo ""
-        echo "## Automations, Scripts, And Scenes"
+        echo "## Automatizări, scripturi și scene"
         echo ""
         section_automation_inventory
         echo ""
-        echo "## Unavailable Or Unknown Entities"
+        echo "## Entități indisponibile sau necunoscute"
         echo ""
         section_unavailable_entities
         echo ""
-        echo "## Repairs And System Health"
+        echo "## Reparații și stare sistem"
         echo ""
         section_repairs
         echo ""
@@ -539,19 +539,19 @@ generate_agents_md() {
         echo ""
         section_recorder
         echo ""
-        echo "## Device And Entity Rename Memory"
+        echo "## Memorie pentru redenumirea dispozitivelor și entităților"
         echo ""
         section_rename_memory
         echo ""
-        echo "## Recent Errors"
+        echo "## Erori recente"
         echo ""
         section_recent_errors
         echo ""
-        echo "## Add-on Log Samples"
+        echo "## Fragmente din jurnalele aplicațiilor"
         echo ""
         section_addon_logs
         echo ""
-        echo "## API Access"
+        echo "## Acces API"
         echo ""
         echo '```bash'
         echo 'curl -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/core/info'
@@ -634,10 +634,10 @@ generate_context_json() {
           generated_at: $generated_at,
           source: "derived_from_home_assistant_registries",
           guidance: {
-            purpose: "Runtime memory for Home Assistant device/entity naming. It replaces any manual inventory and is rebuilt from current HA registries.",
-            before_rename: "Read the matching device/entity entries and skip anything already canonical unless the user explicitly asks to rename it again.",
-            canonical_device_name: "[Area] Manufacturer Model [#N]",
-            canonical_entity_friendly_name: "[Area] Device name - Function, or [Area] Device name for the primary entity",
+            purpose: "Memorie pentru denumirea dispozitivelor și entităților Home Assistant. Înlocuiește inventarul manual și este refăcută din registrele curente.",
+            before_rename: "Citește dispozitivele și entitățile potrivite și sari peste elementele deja corecte, dacă utilizatorul nu cere explicit o nouă redenumire.",
+            canonical_device_name: "[Cameră] Producător Model [#N]",
+            canonical_entity_friendly_name: "[Cameră] Nume dispozitiv - Funcție sau [Cameră] Nume dispozitiv pentru entitatea principală",
             canonical_entity_id: "<domain>.<area_slug>_<function>[_<detail>]"
           },
           summary: {
@@ -765,16 +765,16 @@ main() {
     write_skill
 
     if context_is_fresh "$OUTPUT_FILE" "$REFRESH_MINUTES" && [ -d "$CONTEXT_JSON_DIR" ]; then
-        echo "Home Assistant context is fresh; skipping refresh (${OUTPUT_FILE}, refresh window ${REFRESH_MINUTES} minutes)" >&2
-        echo "Run 'ha-context --force' to refresh immediately." >&2
+        echo "Datele Home Assistant sunt recente; actualizarea este omisă (${OUTPUT_FILE}, interval ${REFRESH_MINUTES} minute)" >&2
+        echo "Rulează 'ha-context --force' pentru actualizare imediată." >&2
         exit 0
     fi
 
     generate_agents_md
     generate_context_json
-    echo "Home Assistant context written to ${OUTPUT_FILE}" >&2
-    echo "Structured Home Assistant context written to ${CONTEXT_JSON_DIR}" >&2
-    echo "Home Assistant instance skill written to ${SKILL_DIR}/SKILL.md" >&2
+    echo "Datele Home Assistant au fost scrise în ${OUTPUT_FILE}" >&2
+    echo "Datele Home Assistant structurate au fost scrise în ${CONTEXT_JSON_DIR}" >&2
+    echo "Skill-ul instanței Home Assistant a fost scris în ${SKILL_DIR}/SKILL.md" >&2
 }
 
 main "$@"

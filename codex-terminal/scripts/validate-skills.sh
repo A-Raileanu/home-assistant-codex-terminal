@@ -5,7 +5,7 @@ set -e
 root="${1:-${CODEX_HOME:-$HOME/.codex}/skills}"
 
 if [ ! -d "$root" ]; then
-    echo "No skills directory found: $root"
+    echo "Directorul de skill-uri nu există: $root"
     exit 0
 fi
 
@@ -30,7 +30,7 @@ def load_frontmatter(frontmatter):
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         if ":" not in line:
-            raise ValueError(f"cannot parse frontmatter line without PyYAML: {line!r}")
+            raise ValueError(f"linia de metadate nu poate fi citită fără PyYAML: {line!r}")
         key, value = line.split(":", 1)
         data[key.strip()] = value.strip().strip('"').strip("'")
     return data
@@ -38,20 +38,20 @@ def load_frontmatter(frontmatter):
 for skill_file in sorted(root.glob("*/SKILL.md")):
     text = skill_file.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
-        print(f"FAIL: {skill_file}: missing YAML frontmatter")
+        print(f"EROARE: {skill_file}: lipsesc metadatele YAML")
         failed = True
         continue
     try:
         _, frontmatter, _ = text.split("---", 2)
         data = load_frontmatter(frontmatter)
     except Exception as exc:
-        print(f"FAIL: {skill_file}: invalid YAML: {exc}")
+        print(f"EROARE: {skill_file}: YAML incorect: {exc}")
         failed = True
         continue
 
     missing = [key for key in ("name", "description") if not data.get(key)]
     if missing:
-        print(f"FAIL: {skill_file}: missing {', '.join(missing)}")
+        print(f"EROARE: {skill_file}: lipsesc {', '.join(missing)}")
         failed = True
         continue
 
@@ -67,13 +67,13 @@ for md_file in sorted(root.glob("*/*.md")):
         _, frontmatter, _ = text.split("---", 2)
         data = load_frontmatter(frontmatter)
     except Exception as exc:
-        print(f"FAIL: {md_file}: invalid YAML frontmatter: {exc}")
+        print(f"EROARE: {md_file}: metadate YAML incorecte: {exc}")
         failed = True
         continue
 
     missing = [key for key in ("name", "description") if not data.get(key)]
     if missing:
-        print(f"FAIL: {md_file}: missing {', '.join(missing)}")
+        print(f"EROARE: {md_file}: lipsesc {', '.join(missing)}")
         failed = True
 
 sys.exit(1 if failed else 0)

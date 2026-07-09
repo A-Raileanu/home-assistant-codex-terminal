@@ -1,6 +1,6 @@
 ---
 name: ha-automations
-description: Automatizări HA — format `[Zonă] Declanșator — Ce face`, mode (single/restart/queued/parallel), trigger IDs, condiții native, tipuri trigger, wait actions, repeat, if/choose, dezactivare automatizări, anti-pattern-uri.
+description: Automatizări HA — format `[Zonă] Declanșator — Ce face`, mode (single/restart/queued/parallel), identificatori de declanșator, condiții native, tipuri trigger, wait actions, repeat, if/choose, dezactivare automatizări, greșeli frecvente.
 ---
 
 # Automatizări — Home Assistant
@@ -177,7 +177,7 @@ id: <slug_english_lowercase>
 ```
 
 - **Engleză, lowercase_underscore** — la fel ca slugurile de entity_id: `presence_on`, `presence_off`, `door_opened`
-- **Descriptiv** — descrie evenimentul, nu device-ul: `motion_detected`, nu `fp2_trigger`
+- **Descriptiv** — descrie evenimentul, nu dispozitivul: `motion_detected`, nu `fp2_trigger`
 
 #### Când să folosești trigger ID-uri
 
@@ -199,7 +199,7 @@ id: <slug_english_lowercase>
   id: presence_on
 
 # Varianta 2 — în template Jinja2
-- alias: Loghează trigger-ul activ
+- alias: Loghează declanșatorul activ
   action: logbook.log
   data:
     message: "Declanșat de: {{ trigger.id }}"
@@ -294,19 +294,19 @@ actions:
 
 ---
 
-## Bune practici și pattern-uri
+## Bune practici și modele
 
-### Workflow — înainte de a scrie o automatizare
+### Flux — înainte de a scrie o automatizare
 
 1. Inspectează entitățile, helpers, scripturile și automatizările existente înainte de a scrie YAML nou.
 2. Preferă `entity_id` față de `device_id`, cu excepția cazului în care un device trigger e explicit mai stabil (ex: ZHA cu `device_ieee`).
 3. Alege `mode:` deliberat — vezi ghidul de alegere din secțiunea Mode de mai sus.
 4. Preferă condiții native (`state`, `numeric_state`, `time`, `sun`, `zone`) față de `condition: template`.
-5. Folosește trigger IDs și `choose` pentru automatizări cu mai multe ramuri.
+5. Folosește identificatori de declanșator și `choose` pentru automatizări cu mai multe ramuri.
 6. Rulează `ha-safe-edit check` după editări.
 
 **Evită:**
-- Template-uri de polling când există un event trigger disponibil.
+- Șabloane de polling când există un event trigger disponibil.
 - Hard-coded device IDs.
 - Editarea `.storage/` direct.
 - Snippet-uri YAML fără validarea întregii configurații.
@@ -315,7 +315,7 @@ actions:
 
 ### Condiții native
 
-Preferă întotdeauna condițiile native față de `condition: template`. Sunt validate la încărcare, nu la runtime — erorile apar imediat, nu în producție.
+Preferă întotdeauna condițiile native față de `condition: template`. Sunt validate la încărcare, nu la rulare — erorile apar imediat, nu în producție.
 
 #### Condiție de stare (`state`)
 
@@ -641,7 +641,7 @@ triggers:
 
 #### Trigger device (folosește cu precauție)
 
-`device_id` nu e persistent — se schimbă dacă device-ul e re-adăugat. Preferă triggere pe `entity_id`.
+`device_id` nu e persistent — se schimbă dacă dispozitivul e re-adăugat. Preferă triggere pe `entity_id`.
 
 ```yaml
 # Evită dacă există alternativă cu entity_id
@@ -762,7 +762,7 @@ Ambele tipuri de wait setează `wait.completed` și `wait.remaining`:
 
 #### `wait_template` (folosește rar)
 
-Face polling până când template-ul devine true. **Continuă imediat dacă condiția e deja adevărată la pornire.**
+Face polling până când șablonul devine true. **Continuă imediat dacă condiția e deja adevărată la pornire.**
 
 ```yaml
 - wait_template: "{{ states('sensor.temperature') | float > 25 }}"
@@ -953,17 +953,17 @@ Via UI: *Settings → Automations → deschide automatizarea → ⋮ → Setting
 
 ---
 
-### Anti-pattern-uri
+### Anti-modele
 
 | Anti-pattern | Folosește în schimb | De ce |
 |---|---|---|
-| `condition: template` cu `float > 25` | `condition: numeric_state` | Validat la încărcare, nu la runtime |
+| `condition: template` cu `float > 25` | `condition: numeric_state` | Validat la încărcare, nu la rulare |
 | `wait_template: "{{ is_state(...) }}"` | `wait_for_trigger` cu state trigger | Event-driven, nu polling; semantică diferită (voir secțiunea Wait) |
 | `device_id` în triggers | `entity_id` (sau `device_ieee` pentru ZHA) | `device_id` se schimbă la re-adăugare |
 | `mode: single` pentru lumini cu mișcare | `mode: restart` | Re-triggerele trebuie să reseteze timer-ul |
 | `enabled: false` ca cheie top-level | `automation.turn_off` (temporar) sau entity registry disable (permanent) | Cheie invalidă — automatizarea devine `unavailable` |
 | `entered_home`/`left_home` triggers pentru persoane | `state` trigger `to: home` / `to: not_home` | Eliminate în 2026.5 |
-| `color_temp` (mireds) în service calls pentru lumini | `color_temp_kelvin` | Parametrul `color_temp` eliminat în 2026.3 |
+| `color_temp` (mireds) în apeluri de servicii pentru lumini | `color_temp_kelvin` | Parametrul `color_temp` eliminat în 2026.3 |
 
 ---
 

@@ -86,9 +86,9 @@ def main() -> int:
 
     errors, warnings = lint_skill(args.skill_root)
     for warning in warnings:
-        print(f"WARN: {warning}")
+        print(f"AVERTISMENT: {warning}")
     for error in errors:
-        print(f"FAIL: {error}")
+        print(f"EROARE: {error}")
     if not errors:
         print(f"OK: {args.skill_root.name} lint")
     return 1 if errors else 0

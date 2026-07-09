@@ -7,7 +7,7 @@ description: Helpers HA (input_*, timer, counter, template sensors) + scene-uri 
 
 ## Helpers
 
-Helpers sunt entități virtuale create manual în HA pentru a stoca stare, configurații sau valori de prag folosite în automatizări. Spre deosebire de device-uri (care există fizic), helpers există doar în HA și sunt editabile din UI fără a modifica YAML.
+Helpers sunt entități virtuale create manual în HA pentru a stoca stare, configurații sau valori de prag folosite în automatizări. Spre deosebire de dispozitive (care există fizic), helpers există doar în HA și sunt editabile din UI fără a modifica YAML.
 
 ### Tipuri de helpers
 
@@ -25,7 +25,7 @@ Helpers sunt entități virtuale create manual în HA pentru a stoca stare, conf
 
 ### Limbă și entity_id
 
-- **Friendly name (vizibil în UI)** → în română (consistent cu entity names din convenția de device-uri)
+- **Friendly name (vizibil în UI)** → în română (consistent cu entity names din convenția de dispozitive)
 - **Entity_id** → HA îl generează automat din nume (diacritice eliminate, spații → underscore, lowercase). Redenumește-l manual din UI după creare pentru a urma convenția în engleză.
 
 | Friendly name (RO) | Entity ID recomandat (EN) |
@@ -54,7 +54,7 @@ Funcție + Camera (ca sufix, nu prefix)
 ```
 Exemplu: `Offset termostat Dormitor #1`, `Oră culcare Dormitor #1`, `Delay lumină Living`
 
-> Nu folosi `[Cameră]` prefix cu paranteze drepte la helpers — în lista UI helperele sunt separate de device-uri, prefixul nu e necesar. Camera apare ca sufix sau prin aria asignată.
+> Nu folosi `[Cameră]` prefix cu paranteze drepte la helpers — în lista UI helperele sunt separate de dispozitive, prefixul nu e necesar. Camera apare ca sufix sau prin aria asignată.
 
 ### Area (categoria)
 
@@ -383,7 +383,7 @@ sensor:
 
 ## Scene-uri
 
-Scenele sunt snapshot-uri statice ale stării dorite — setează mai multe device-uri simultan, fără logică sau delay. Spre deosebire de scripturi, o scenă nu poate lua decizii, nu poate aștepta și nu poate trimite notificări.
+Scenele sunt snapshot-uri statice ale stării dorite — setează mai multe dispozitive simultan, fără logică sau delay. Spre deosebire de scripturi, o scenă nu poate lua decizii, nu poate aștepta și nu poate trimite notificări.
 
 ### Scene vs. scripturi
 
@@ -391,7 +391,7 @@ Scenele sunt snapshot-uri statice ale stării dorite — setează mai multe devi
 | - | ----- | ------ |
 | **Ce face** | Setează stări simultan, instant | Execută acțiuni secvențial |
 | **Logică** | Nu (snapshot static) | Da (condiții, delay, ramificații) |
-| **Viteză** | Instant (toate device-urile odată) | Respectă delay-uri și condiții |
+| **Viteză** | Instant (toate dispozitivele odată) | Respectă delay-uri și condiții |
 | **Conținut** | Stări lumini, jaluzele, climat, media | Orice acțiune HA |
 | **Folosit pentru** | Ambianțe, moduri de iluminare | Rutine, fluxuri complexe, notificări |
 
@@ -456,7 +456,7 @@ Mod curățenie        → scene.cleaning   (100% pe tot)
 - **Un cuvânt sau două** pentru activitate — scurt și intuitiv
 - **Setează `icon:`** — face scena recunoscută rapid în dashboard
 - **Setează `transition:`** — 3–10 secunde pentru lumini, 0 pentru jaluzele/media
-- **Nu duplica device name** în scenă — scena conține device-ul, nu îl menționează în nume
+- **Nu duplica device name** în scenă — scena conține dispozitivul, nu îl menționează în nume
 
 ### Icoane recomandate
 

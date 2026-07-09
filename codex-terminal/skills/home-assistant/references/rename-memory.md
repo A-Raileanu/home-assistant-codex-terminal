@@ -5,7 +5,7 @@ description: Ghid pentru /data/ha-context/rename_memory.json si auditul dispozit
 
 # Rename Memory
 
-`/data/ha-context/rename_memory.json` este memoria runtime generata de `ha-context` din registrele reale Home Assistant. Inlocuieste orice inventar manual.
+`/data/ha-context/rename_memory.json` este memoria de rulare generata de `ha-context` din registrele reale Home Assistant. Inlocuieste orice inventar manual.
 
 ## Regula De Aur
 
@@ -32,7 +32,7 @@ jq '.entities[] | select(.skip_rename_by_default != true) | {entity_id, friendly
 
 | Camp | Sens |
 |---|---|
-| `summary` | Totaluri pentru device-uri, entitati, canonical names si disabled entities. |
+| `summary` | Totaluri pentru dispozitive, entitati, canonical names si disabled entities. |
 | `devices[].is_canonical_name` | Device-ul are deja nume in format `[Area] ...`. |
 | `devices[].skip_rename_by_default` | Codex trebuie sa sara peste device implicit. |
 | `entities[].is_canonical_friendly_name` | Friendly name-ul entitatii este deja canonical. |
@@ -40,7 +40,7 @@ jq '.entities[] | select(.skip_rename_by_default != true) | {entity_id, friendly
 | `entities[].skip_rename_by_default` | Codex trebuie sa sara peste entitate implicit. |
 | `label_details` | Labels rezolvate din registrul HA. |
 
-## Workflow Rename
+## Flux Rename
 
 1. Ruleaza `ha-context --force` daca memoria pare veche.
 2. Interogheaza doar intrarile relevante.

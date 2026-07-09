@@ -1,9 +1,9 @@
 ---
 name: ha-devices-areas
-description: Areas, labels (90+), format device names `[Cameră] Producător Model`, workflow device nou și memorie runtime `rename_memory.json`. Citește când adaugi/redenumești device-uri, arii, labels sau verifici ce a fost deja redenumit.
+description: Areas, labels (90+), format device names `[Cameră] Producător Model`, flux device nou și memorie de rulare `rename_memory.json`. Citește când adaugi/redenumești dispozitive, arii, labels sau verifici ce a fost deja redenumit.
 ---
 
-# Device-uri, Areas și Memorie Runtime — Home Assistant
+# Dispozitive, Areas și Memorie de redenumire — Home Assistant
 
 ## Areas
 
@@ -26,13 +26,13 @@ Sunt deja configurate. Lista canonică:
 
 > **Notă:** păstrează `#1`/`#2` în Area name (citibil), dar slug-ul intern devine `dormitor1` / `baie2`. Slug-ul rămâne în română (match cu Area), restul entity_id-ului e în engleză — e singurul punct de "tranziție" lingvistică în convenție.
 >
-> **Sistem și Rețea** sunt pseudo-arii pentru device-uri/entități fără cameră fizică (echipamente rețea, hub-uri, integrări cloud, template-uri/helpers globale).
+> **Sistem și Rețea** sunt pseudo-arii pentru dispozitive/entități fără cameră fizică (echipamente rețea, hub-uri, integrări cloud, șabloane/helpers globale).
 
 ---
 
 ## Labels
 
-Labels-urile sunt categorisire **ortogonală** Area-urilor — răspund la întrebarea *"ce TIP de device e?"* indiferent de cameră. Permit filtrare rapidă în UI (`label:Senzor Mișcare` → vezi toate PIR-urile din casă), sortare în dashboarduri și grupare în automatizări.
+Labels-urile sunt categorisire **ortogonală** Area-urilor — răspund la întrebarea *"ce TIP de device e?"* indiferent de cameră. Permit filtrare rapidă în UI (`label:Senzor Mișcare` → vezi toate PIR-urile din casă), sortare în panouri și grupare în automatizări.
 
 ### Regula de aur
 
@@ -49,7 +49,7 @@ Labels-urile sunt categorisire **ortogonală** Area-urilor — răspund la într
 - **Numele label-ului:** capitalizare pe fiecare cuvânt de conținut (`Aer Condiționat`, `Senzor Mișcare`, `Mașină Spălat Vase`).
 - **Diacritice:** permise în numele afișat.
 - **Slug:** lowercase ASCII, underscore-separated (`aer_conditionat`, `senzor_miscare`, `masina_spalat_vase`).
-- **Un label primar per device.** Mai multe label-uri **doar** când device-ul are funcții cu adevărat distincte — ex: un Shelly 2PM care alimentează DOI consumatori diferiți (rar); sau un releu folosit ca atare + monitorizare consum (`Întrerupător` + `Contor`).
+- **Un label primar per device.** Mai multe label-uri **doar** când dispozitivul are funcții cu adevărat distincte — ex: un Shelly 2PM care alimentează DOI consumatori diferiți (rar); sau un releu folosit ca atare + monitorizare consum (`Întrerupător` + `Contor`).
 
 ### Lista canonică
 
@@ -222,7 +222,7 @@ Labels-urile sunt categorisire **ortogonală** Area-urilor — răspund la într
 
 În UI: **Settings → Devices & Services → [Device] → ⋮ → Manage labels**.
 În YAML (custom integrations): nu se setează label-uri din YAML, doar din UI sau via REST API.
-În memoria runtime: `rename_memory.json` expune `labels` și `label_details` pentru fiecare device/entitate, derivate din `core.label_registry`.
+În memoria de rulare: `rename_memory.json` expune `labels` și `label_details` pentru fiecare device/entitate, derivate din `core.label_registry`.
 
 ---
 
@@ -247,9 +247,9 @@ Trei componente, în ordine:
 
 - `[Cameră]` — exact numele Area-ului, în paranteze drepte. Sortează vizual lista de devices pe camere.
 - `Producător Model` — așa cum scrie producătorul oficial (`Shelly Pro 3EM`, nu `shelly pro 3em`).
-- `#N` — sufix doar dacă există **mai multe device-uri identice în aceeași cameră** (același producător + model).
+- `#N` — sufix doar dacă există **mai multe dispozitive identice în aceeași cameră** (același producător + model).
 
-Funcția device-ului **NU** intră în device name. Tipul e descris de Label, iar funcția specifică e implicit în entity_id (ex: `light.living_ceiling` vs `light.living_tv_led`) și, când ai nevoie de context uman, în descrierea automatizărilor/scripturilor care îl folosesc.
+Funcția dispozitivului **NU** intră în device name. Tipul e descris de Label, iar funcția specifică e implicit în entity_id (ex: `light.living_ceiling` vs `light.living_tv_led`) și, când ai nevoie de context uman, în descrierea automatizărilor/scripturilor care îl folosesc.
 
 ### Exemple
 
@@ -274,7 +274,7 @@ Funcția device-ului **NU** intră în device name. Tipul e descris de Label, ia
 - E vizual distinctiv în UI și în liste de notificări/loguri.
 - Slash-ul `/` se confundă cu separator de path; cratima `-` se folosește deja în multe nume de model (`RLC-823A`).
 
-### Dezambiguare multipli device-uri identice
+### Dezambiguare multipli dispozitive identice
 
 Când `#N` nu e suficient pentru a-ți aminti rolul fiecărui device:
 
@@ -300,18 +300,18 @@ Echipamente de rețea, hub-uri, integrări cloud — folosește `[Rețea]` sau `
 Când adaugi un device nou, parcurge în ordine:
 
 1. **Citește `/data/ha-context/rename_memory.json`** pentru a vedea ce există deja (evită duplicări, găsește următorul `#N`, vezi ce labels sunt deja folosite).
-2. **Adaugă device-ul în area corectă** (din lista canonică de mai sus).
+2. **Adaugă dispozitivul în area corectă** (din lista canonică de mai sus).
 3. **Setează device name:** `[Area] Producător Model [#N]`.
 4. **Atribuie label-ul de tip** (din lista canonică). Dacă niciun label existent nu se potrivește, creează unul nou și actualizează lista canonică de aici.
 5. **Pentru fiecare entitate setează `friendly_name` explicit cu prefix `[Area] Nume dispozitiv - <Funcție>`** (vezi `ha-entities.md` pentru format complet și vocabularul de funcții):
-   - entitatea principală a device-ului → `friendly_name = [Area] Nume dispozitiv` (fără ` - <Funcție>`)
+   - entitatea principală a dispozitivului → `friendly_name = [Area] Nume dispozitiv` (fără ` - <Funcție>`)
    - sub-funcție → `friendly_name = [Area] Nume dispozitiv - <Funcție>` cu funcția în română din vocabular
-   - regula se aplică indiferent dacă integrarea respectă `has_entity_name` sau nu — UI-ul afișează `friendly_name`-ul explicit în multe view-uri unde device-ul nu apare deloc (statistici, dropdown-uri, log filters, notificări)
+   - regula se aplică indiferent dacă integrarea respectă `has_entity_name` sau nu — UI-ul afișează `friendly_name`-ul explicit în multe pagini unde dispozitivul nu apare deloc (statistici, dropdown-uri, log filters, notificări)
 6. **Verifică entity_id-urile:** dacă au sufixe random (`_a1b2c3`), redenumește la `<slug_camera>_<function>`.
 7. **Pentru bulk renames sau control prin git**, folosește `customize:` în `configuration.yaml` în loc de UI rename (vezi `ha-entities.md` secțiunea "Cum aplici prefixul").
 8. **Dezactivează entitățile auto-create pe care nu le folosești** (vezi `ha-entities.md` secțiunea dezactivare).
-9. **Dacă device-ul înlocuiește unul existent sau ai schimbat entity_id-uri:** verifică automatizările, scripturile, scenele, grupurile și helpers (vezi `ha-refactoring.md`).
-10. **Rulează `ha-context --force`** și verifică în `rename_memory.json` că device-ul, entitățile, aria, labels-urile și `disabled_by` sunt reflectate corect.
+9. **Dacă dispozitivul înlocuiește unul existent sau ai schimbat entity_id-uri:** verifică automatizările, scripturile, scenele, grupurile și helpers (vezi `ha-refactoring.md`).
+10. **Rulează `ha-context --force`** și verifică în `rename_memory.json` că dispozitivul, entitățile, aria, labels-urile și `disabled_by` sunt reflectate corect.
 
 ---
 
@@ -372,9 +372,9 @@ Disabled: pet_motion (nu ai animale outdoor), AI face detection (folosești doar
 
 ---
 
-## Memorie runtime — `rename_memory.json`
+## Memorie de rulare — `rename_memory.json`
 
-`/data/ha-context/rename_memory.json` este memoria rapidă pentru device-uri și entități. Este generată automat de `ha-context` din registrele Home Assistant:
+`/data/ha-context/rename_memory.json` este memoria rapidă pentru dispozitive și entități. Este generată automat de `ha-context` din registrele Home Assistant:
 
 - `core.device_registry` — device ID, nume curent, `name_by_user`, producător, model, arie, labels, identifiers.
 - `core.entity_registry` — entity_id, unique_id, nume override, device_id, arie, labels, `disabled_by`.
@@ -383,7 +383,7 @@ Disabled: pet_motion (nu ai animale outdoor), AI face detection (folosești doar
 
 ### Reguli de folosire
 
-1. Înainte de orice redenumire, caută device-ul/entitatea în `rename_memory.json`.
+1. Înainte de orice redenumire, caută dispozitivul/entitatea în `rename_memory.json`.
 2. Dacă `skip_rename_by_default: true`, `is_canonical_name: true` sau `is_canonical_friendly_name: true`, nu include acel element în plan.
 3. Redenumește din nou doar dacă utilizatorul cere explicit o schimbare de convenție, cameră, rol sau disambiguator.
 4. După aplicarea schimbărilor, rulează `ha-context --force`.
@@ -394,11 +394,11 @@ Disabled: pet_motion (nu ai animale outdoor), AI face detection (folosești doar
 | Câmp | Unde apare | Cum îl folosești |
 |---|---|---|
 | `device_id` | `devices[]`, `entities[]` | Leagă siblings ai aceluiași device. |
-| `identifiers` / `connections` | `devices[]` | Distinge device-uri identice. |
+| `identifiers` / `connections` | `devices[]` | Distinge dispozitive identice. |
 | `name`, `name_by_user`, `registry_name` | `devices[]` | Detectează numele deja redenumit. |
 | `entity_id`, `unique_id` | `entities[]` | Separă cheia tehnică de identitatea stabilă. |
 | `friendly_name`, `registry_name`, `original_name` | `entities[]` | Detectează override-uri și nume deja canonical. |
-| `labels`, `label_details` | ambele | Verifică tipul device-ului fără a re-citi lista completă. |
+| `labels`, `label_details` | ambele | Verifică tipul dispozitivului fără a re-citi lista completă. |
 | `disabled_by` | `entities[]` | Confirmă entitățile dezactivate post-import. |
 
 ### Migrarea configurației existente
@@ -408,7 +408,7 @@ Când redenumești ce există deja:
 1. **Citește `rename_memory.json`** și lucrează doar pe intrările care nu sunt deja canonical.
 2. **Backup la `.storage/`** înainte de modificări mari, sub `/data/safe-edit-backups`, nu lângă fișierele sursă din `/config`.
 3. **Începe cu device names** — efectul se propagă automat la friendly names dacă entitățile au `has_entity_name: True`, dar tot setează override explicit pe entitățile importante.
-4. **Atribuie labels-urile** după ce device-urile au nume final — în UI poți selecta multiple device-uri și atribui label-ul în masă.
+4. **Atribuie labels-urile** după ce dispozitivele au nume final — în UI poți selecta multiple dispozitive și atribui label-ul în masă.
 5. **Folosește feature-ul "Rename entity ID" din UI** — îți oferă opțiunea de a actualiza referințele automat în automations/scripts/scenes/groups/helpers/dashboards. **Acceptă opțiunea.**
 6. **Verifică ce a scăpat de update-ul automat** (template:, integrări externe, customize.yaml) — vezi `ha-refactoring.md`.
 7. **Scoate brand-ul din entity_id, lasă-l în device name** — modificare structurală riscantă; o singură dată, complet.

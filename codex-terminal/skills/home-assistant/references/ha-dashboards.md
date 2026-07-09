@@ -1,6 +1,6 @@
 ---
 name: ha-dashboards
-description: Dashboards Lovelace HA — view types (sections/panel/sidebar/masonry), carduri built-in (39 tipuri), features, custom cards, CSS, HACS, anti-pattern-uri. Citește pentru creare/modificare dashboard.
+description: Panouri Lovelace Home Assistant — tipuri de pagini, carduri incluse, funcții, carduri personalizate, CSS, HACS și greșeli frecvente.
 ---
 
 # Dashboards Lovelace — Home Assistant
@@ -9,23 +9,23 @@ description: Dashboards Lovelace HA — view types (sections/panel/sidebar/mason
 
 ## Principii de design
 
-- **Designează dashboarduri pentru uz zilnic repetat, nu pentru showcase.** Prioritizează built-in Sections dashboards și Tile cards pentru simplitate.
+- **Proiectează panouri pentru folosire zilnică, nu doar pentru demonstrații vizuale.** Preferă paginile Sections și cardurile Tile incluse.
 - **Organizează pe cameră, rutină sau task** — nu pe estetică.
 - **Poziționează controalele adiacent informațiilor relevante** pentru operare sigură.
 - **Nu edita fișierele `.storage/` direct** când există opțiuni API/YAML disponibile.
-- **Mobile-first:** testează pe viewport de telefon.
-- **Consistență cu entity naming:** folosește entity_id-uri corecte din registru.
+- **Începe cu telefonul:** testează pe un ecran îngust.
+- **Nume consecvente:** folosește entity_id-uri corecte din registru.
 
-## Workflow
+## Flux
 
-1. Cataloghează dashboardurile existente — determină dacă sunt storage-based sau YAML.
+1. Inventariază panourile existente și stabilește dacă sunt stocate din interfață sau în YAML.
 2. Verifică entity ID-urile înainte de implementare.
 3. Folosește API/MCP pentru modificări — nu editare directă `.storage/`.
-4. Testează pe viewport mobil.
+4. Testează pe un ecran de telefon.
 
 ---
 
-## Structura dashboardului
+## Structura panoului
 
 ```json
 {
@@ -49,10 +49,10 @@ description: Dashboards Lovelace HA — view types (sections/panel/sidebar/mason
 ```
 
 **Reguli url_path:**
-- Dashboardurile noi trebuie să conțină o cratimă: `my-dashboard` (nu `mydashboard`)
-- Folosește `lovelace` pentru a ținti dashboardul implicit built-in
+- Panourile noi trebuie să conțină o cratimă: `my-dashboard` (nu `mydashboard`)
+- Folosește `lovelace` pentru a ținti panoul implicit built-in
 - `dashboard_id`: identificator intern (returnat la creare, folosit pentru update/delete)
-- `url_path`: identificator URL (vizibil utilizatorului, folosit în URL-urile dashboardului)
+- `url_path`: identificator URL (vizibil utilizatorului, folosit în URL-urile panoului)
 
 ---
 
@@ -60,12 +60,12 @@ description: Dashboards Lovelace HA — view types (sections/panel/sidebar/mason
 
 | Tip | Folosește pentru |
 |------|---------|
-| `sections` | Majoritatea dashboardurilor (RECOMANDAT) — grid-based, responsive |
+| `sections` | Majoritatea panourilor (RECOMANDAT) — grilă adaptabilă |
 | `panel` | Carduri unice pe tot ecranul (hărți, camere, iframes) |
 | `sidebar` | Layout pe două coloane cu conținut primar/secundar |
-| `masonry` | Legacy — aranjează cardurile automat, mai puțin control |
+| `masonry` | Variantă veche — aranjează cardurile automat, mai puțin control |
 
-### Configurarea view-ului
+### Configurarea paginii
 
 ```json
 {
@@ -83,9 +83,9 @@ description: Dashboards Lovelace HA — view types (sections/panel/sidebar/mason
 
 ---
 
-## Carduri built-in
+## Carduri incluse
 
-Home Assistant oferă **39 tipuri de carduri built-in**. Documentație pentru fiecare card disponibilă la:
+Home Assistant oferă **39 tipuri de carduri incluse**. Documentație pentru fiecare card disponibilă la:
 ```
 https://raw.githubusercontent.com/home-assistant/home-assistant.io/refs/heads/current/source/_dashboards/{card_type}.markdown
 ```
@@ -184,7 +184,7 @@ Tipuri de acțiuni: `toggle`, `call-service`, `more-info`, `navigate`, `url`, `n
 
 ---
 
-## Carduri custom
+## Carduri personalizate
 
 Folosește custom JavaScript cards când cardurile built-in nu suportă vizualizarea dorită.
 
@@ -215,11 +215,11 @@ window.customCards.push({ type: "my-card", name: "My Card", description: "A cust
 
 Utilizare: `{"type": "custom:my-card", "entity": "sensor.temperature"}`
 
-### Workflow card custom
+### Flux card custom
 
 1. Scrie clasa JavaScript (vezi Card custom minimal de mai sus)
 2. Înregistreaz-o ca dashboard resource via HA REST API (`/api/config/lovelace/resources`) cu `resource_type: "module"`
-3. Folosește cardul cu prefix `custom:` în config-ul dashboardului
+3. Folosește cardul cu prefix `custom:` în config-ul panoului
 
 ```json
 {
@@ -354,7 +354,7 @@ entities:
 
 | Problemă | Soluție |
 |-------|----------|
-| url_path respins | Dashboardurile noi au nevoie de o cratimă: `my-dashboard` nu `mydashboard`. Folosește `lovelace` pentru dashboardul implicit. |
+| url_path respins | Panourile noi au nevoie de o cratimă: `my-dashboard` nu `mydashboard`. Folosește `lovelace` pentru panoul implicit. |
 | Entitate negăsită | Folosește entity ID complet: `light.living_ceiling` nu `living_ceiling` |
 | Features nu funcționează | Potrivește tipul de feature cu domeniul entității (ex: `light-brightness` merge doar pe `light.*`) |
 | Card custom nu se încarcă | Verifică ca tipul de resource să fie `module` și că URL-ul este accesibil |
@@ -379,7 +379,7 @@ entities:
 | **Card favorites** | 2026.4 | Light color favorites și cover position favorites pe tile/light cards |
 | **Auto-height cards** | 2026.4 | Cardurile se ajustează automat la înălțime bazat pe conținut |
 
-### Legacy patterns de evitat
+### Modele vechi de evitat
 
 - Single-view dashboards cu toate cardurile într-un scroll lung
 - Utilizare excesivă de vertical-stack/horizontal-stack în locul grid
@@ -388,15 +388,15 @@ entities:
 
 ---
 
-## Workflow iterativ vizual
+## Flux iterativ vizual
 
 Pentru design iterativ cu feedback vizual, adaugă un MCP server de browser automation:
 
-### Workflow
+### Flux
 
 ```
 1. Creează/actualizează dashboard via HA config API
-2. Navighează browser-ul la URL-ul dashboardului
+2. Navighează browser-ul la URL-ul panoului
 3. Fă screenshot pentru a vedea layout-ul curent
 4. Analizează screenshot-ul pentru probleme (spacing, alignment, culori)
 5. Ajustează configurația și repetă
@@ -404,4 +404,4 @@ Pentru design iterativ cu feedback vizual, adaugă un MCP server de browser auto
 
 ---
 
-**TL;DR:** View type `sections` + cardul `tile` ca default. Grid cards pentru layout multi-coloană. Multiple views cu navigation. Nu edita `.storage/` direct — folosește API. `url_path` necesită cratimă pentru dashboarduri noi.
+**TL;DR:** View type `sections` + cardul `tile` ca default. Grid cards pentru layout multi-coloană. Multiple views cu navigation. Nu edita `.storage/` direct — folosește API. `url_path` necesită cratimă pentru panouri noi.

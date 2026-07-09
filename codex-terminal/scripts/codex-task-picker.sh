@@ -1,158 +1,93 @@
 #!/bin/bash
 
 set -uo pipefail
+export LC_ALL="${LC_ALL:-C.UTF-8}"
 
 TMUX_SESSION_NAME="codex"
-CODEX_BASE_COMMAND="codex --cd /config"
+CODEX_WORKDIR="/config"
 
-if [ "${CODEX_HA_FULL_PERMISSIONS:-true}" = "true" ]; then
-    CODEX_BASE_COMMAND="codex --dangerously-bypass-approvals-and-sandbox --cd /config"
-fi
-
-# ----- Theme (ANSI) -----
+# Culori ANSI
 RESET=$'\033[0m'
 BOLD=$'\033[1m'
 DIM=$'\033[2m'
-
-ACCENT=$'\033[38;5;51m'        # bright cyan (matches ttyd theme)
-ACCENT_DIM=$'\033[38;5;38m'    # darker cyan
-GREEN=$'\033[38;5;42m'         # success green
-YELLOW=$'\033[38;5;221m'       # warning yellow
+ACCENT=$'\033[38;5;51m'
+ACCENT_DIM=$'\033[38;5;38m'
+GREEN=$'\033[38;5;42m'
+YELLOW=$'\033[38;5;221m'
 BLUE=$'\033[38;5;75m'
-PURPLE=$'\033[38;5;141m'
 WHITE=$'\033[38;5;254m'
 GREY=$'\033[38;5;245m'
 DARK_GREY=$'\033[38;5;240m'
-
 ARROW='▶'
 DOT='●'
-BOX_WIDTH=88
-declare -A PAD_CACHE=()
 
-# ----- Preset prompts -----
-# Shared confirmation gate appended to every actionable preset: Codex must
-# summarise the proposed changes and wait for explicit approval before writing.
-PROMPT_CONFIRM='Foarte important: înainte de a modifica orice pe /config, oprește-te și afișează-mi un sumar clar, sub formă de listă, cu toate modificările pe care intenționezi să le faci — pentru fiecare element arată ce se schimbă și din ce în ce. Apoi întreabă-mă explicit dacă vrei să pregătești planul tehnic sau vrei să ajustez ceva și așteaptă răspunsul meu. Nu scrie definitiv nimic pe /config înainte să confirm. După confirmarea planului conceptual, folosește `ha-safe-edit plan <file> -- <command...>` pentru fiecare fișier, arată diff-ul/plan_id-ul rezultat și cere confirmarea finală. Aplică doar după confirmarea finală cu `ha-safe-edit apply <plan_id>`. Dacă cer modificări, actualizează sumarul și întreabă din nou până confirm.'
+# Cereri prestabilite
+PROMPT_CONFIRM='Foarte important: înainte să modifici ceva în /config, oprește-te și arată-mi o listă clară cu toate schimbările propuse. Pentru fiecare element, spune ce există acum și cum va arăta după schimbare. Apoi întreabă-mă dacă vreau să pregătești planul tehnic sau dacă vreau să ajustez propunerea și așteaptă răspunsul meu. Nu scrie nimic definitiv în /config înainte să confirm. După ce confirm propunerea, folosește `ha-safe-edit plan <fișier> -- <comandă...>` pentru fiecare fișier, arată diferențele și identificatorul planului, apoi cere confirmarea finală. Aplică schimbările numai după confirmarea finală, cu `ha-safe-edit apply <plan_id>`. Dacă cer modificări, actualizează lista și cere din nou confirmarea.'
 
-PROMPT_RENAME='Citește home-assistant/SKILL.md, ha-devices-areas.md și ha-entities.md, apoi folosește `python "$CODEX_HOME/skills/home-assistant/scripts/ha_rename_audit.py" --pending` (sau /data/ha-context/rename_memory.json dacă scriptul nu există). Identifică toate device-urile și entitățile care nu respectă convenția: device-uri ca "[Area] Producător Model [#N]", iar friendly_name pe fiecare entitate ca "[Area] Nume dispozitiv - Funcție" (sau doar "[Area] Nume dispozitiv" pentru entitatea principală). Ignoră complet device-urile și entitățile care deja respectă convenția sau au skip_rename_by_default=true — nu le include în plan decât dacă cer explicit redenumirea lor. '"$PROMPT_CONFIRM"' După ce confirm, aplică redenumirile folosind ha-safe-edit pentru orice scriere pe /config. La final, rulează ha-context --force, verifică /data/ha-context/rename_memory.json și raportează lista a ce ai schimbat.'
+PROMPT_RENAME='Citește skill-ul home-assistant și ghidurile pentru dispozitive și entități. Rulează `python "$CODEX_HOME/skills/home-assistant/scripts/ha_rename_audit.py" --pending` sau folosește `/data/ha-context/rename_memory.json` dacă scriptul nu există. Găsește numai dispozitivele și entitățile care nu respectă regula: numele dispozitivului trebuie să fie „[Cameră] Producător Model [#N]”, iar `friendly_name` trebuie să fie „[Cameră] Nume dispozitiv - Funcție” sau doar „[Cameră] Nume dispozitiv” pentru entitatea principală. Nu include elementele care respectă deja regula sau au `skip_rename_by_default=true`, decât dacă cer explicit acest lucru. '"$PROMPT_CONFIRM"' După confirmare, folosește ha-safe-edit pentru orice scriere în /config. La final, rulează `ha-context --force`, verifică memoria de redenumire și arată exact ce ai schimbat.'
 
-PROMPT_NEW_DEVICE='Am adăugat unul sau mai multe dispozitive noi în Home Assistant și vreau să le aduc la convenție. Citește mai întâi home-assistant/SKILL.md, ha-devices-areas.md și ha-entities.md ca să cunoști convenția. Apoi ÎNTREABĂ-MĂ exact ce dispozitiv sau dispozitive am adăugat (nume/producător/model și în ce cameră) și AȘTEAPTĂ răspunsul meu — nu presupune și nu începe înainte să-ți spun. După ce îți dau numele, folosește `python "$CODEX_HOME/skills/home-assistant/scripts/ha_rename_audit.py" --query <nume-sau-model>` sau /data/ha-context/rename_memory.json ca fallback, identifică device-urile respective în /config și pregătește planul de aducere la convenție DOAR pentru acelea, atât pentru device cât și pentru entitățile lui: device name ca "[Cameră] Producător Model [#N]" (folosește #N doar dacă mai există unul identic în aceeași cameră), atribuie label-ul de tip potrivit din lista canonică și setează friendly_name pe FIECARE entitate ca "[Cameră] Nume dispozitiv - Funcție" (sau doar "[Cameră] Nume dispozitiv" pentru entitatea principală). Dacă un device/entitate din memoria runtime este deja canonical sau are skip_rename_by_default=true, nu îl redenumi din nou decât dacă îți cer explicit. Include în plan și corectarea entity_id-urilor cu sufixe random la "<slug_cameră>_<funcție>", dezactivarea entităților auto-create pe care nu le folosești și orice automatizare/script/scenă/grup/helper/dashboard care trebuie actualizat. '"$PROMPT_CONFIRM"' După ce confirm, aplică modificările folosind ha-safe-edit pentru orice scriere pe /config. La final, rulează ha-context --force, verifică /data/ha-context/rename_memory.json și raportează lista a ce ai schimbat.'
+PROMPT_NEW_DEVICE='Am adăugat unul sau mai multe dispozitive în Home Assistant și vreau să le configurez corect. Citește skill-ul home-assistant și ghidurile pentru dispozitive și entități. Întreabă-mă ce dispozitiv am adăugat, inclusiv numele, producătorul, modelul și camera, apoi așteaptă răspunsul meu. După ce răspund, rulează `python "$CODEX_HOME/skills/home-assistant/scripts/ha_rename_audit.py" --query <nume-sau-model>` sau folosește memoria din /data/ha-context. Pregătește schimbări numai pentru dispozitivele indicate și entitățile lor: nume de forma „[Cameră] Producător Model [#N]”, eticheta potrivită și `friendly_name` complet pentru fiecare entitate. Nu modifica din nou elementele deja corecte sau marcate cu `skip_rename_by_default=true`, decât dacă cer explicit. Include și corectarea identificatorilor cu sufixe aleatorii, dezactivarea entităților create automat care nu sunt folosite și actualizarea tuturor referințelor afectate. '"$PROMPT_CONFIRM"' După confirmare, folosește ha-safe-edit pentru orice scriere în /config. La final, rulează `ha-context --force`, verifică memoria de redenumire și arată exact ce ai schimbat.'
 
-PROMPT_AUTOMATIONS='Citește home-assistant/SKILL.md și ha-automations.md. Apoi parcurge toate automatizările din /config (automations.yaml + fișierele din .storage/automation) și stabilește ce ajustări sunt necesare conform convențiilor: alias descriptiv în română cu diacritice, mode corect pentru tipul de trigger (restart pentru motion/timeouts, queued pentru secvențiale, parallel pentru per-entity independente, single doar pentru one-shot), description pe cele complexe, trigger IDs pe multi-trigger, condiții native în loc de template unde se poate. Ignoră complet automatizările care deja respectă convenția — nu le include în plan. '"$PROMPT_CONFIRM"' După ce confirm, aplică ajustările folosind ha-safe-edit pentru orice scriere. La final, raportează lista a ce ai schimbat.'
+PROMPT_AUTOMATIONS='Citește skill-ul home-assistant și ghidul pentru automatizări. Verifică automatizările din `automations.yaml` și din `.storage/automation`. Propune schimbări numai unde sunt necesare: nume clare în română, `mode` potrivit, descriere pentru automatizările complexe, identificatori pentru declanșatoare multiple și condiții native în locul șabloanelor când este posibil. Nu include automatizările care sunt deja corecte. '"$PROMPT_CONFIRM"' După confirmare, folosește ha-safe-edit pentru orice scriere și arată lista completă a schimbărilor.'
 
-PROMPT_FIX='Citește home-assistant/SKILL.md, ha-automations.md, ha-dashboards.md și ha-refactoring.md. Pentru entity_id-uri suspecte folosește `python "$CODEX_HOME/skills/home-assistant/scripts/ha_reference_scan.py" <entity_id>` ca să găsești rapid referințele. Apoi caută în automatizări (automations.yaml + .storage/automation) și în dashboard-uri (.storage/lovelace*, lovelace YAML mode dacă există) toate entitățile declarate greșit: entity_id-uri inexistente, sintaxă invalidă, referințe la integrări vechi care nu mai există, device_id-uri orfane. Pentru fiecare problemă găsită, pregătește corecția propusă (entity nou cu unique_id stabil, înlocuire entity_id, ștergere referință moartă). '"$PROMPT_CONFIRM"' După ce confirm, aplică corecțiile folosind ha-safe-edit. La final, raportează lista completă a entităților reparate și a referințelor șterse.'
+PROMPT_FIX='Citește skill-ul home-assistant și ghidurile pentru automatizări, panouri și refactorizare. Pentru identificatorii suspecți, rulează `python "$CODEX_HOME/skills/home-assistant/scripts/ha_reference_scan.py" <entity_id>`. Verifică automatizările și panourile pentru entități inexistente, sintaxă greșită, integrări eliminate și identificatori de dispozitiv fără corespondent. Pentru fiecare problemă, propune soluția clară: înlocuirea identificatorului, crearea unei entități stabile sau eliminarea referinței nefolosite. '"$PROMPT_CONFIRM"' După confirmare, folosește ha-safe-edit și arată lista completă a elementelor reparate sau eliminate.'
 
-TITLES=(
-    "Sesiune nouă"
-    "Am adăugat un dispozitiv nou"
-    "Redenumește dispozitivele și senzorii"
-    "Ajustează automatizările"
-    "Repară referințele sparte"
-    "Regenerează contextul"
-)
-DESCRIPTIONS=(
-    "Conversație liberă despre HA."
-    "Aduci un device nou la convenție."
-    "Curăță numele care nu respectă regula."
-    "Normalizează alias, mode și trigger-e."
-    "Caută entități inexistente în config."
-    "Citește din nou datele Home Assistant."
-)
-PROMPTS=(
-    ""
-    "$PROMPT_NEW_DEVICE"
-    "$PROMPT_RENAME"
-    "$PROMPT_AUTOMATIONS"
-    "$PROMPT_FIX"
-    "__REGENERATE_CONTEXT__"
-)
-
-COUNT=${#TITLES[@]}
+declare -a TITLES=() DESCRIPTIONS=() ACTIONS=()
+declare -a PADDED_TITLES=() PADDED_DESCRIPTIONS=() PADDED_BANNER=()
+COUNT=0
 SELECTED=0
-SESSION_STATE="nouă"
+MENU_KIND="main"
+SESSION_LABEL="nouă"
+LAYOUT_DIRTY=1
+BOX_WIDTH=88
+MENU_FIRST_ROW=1
+REST_ROW=1
+RENDERED_BLOCK=""
 
 ADDON_VER="$(cat /opt/scripts/addon-version 2>/dev/null || echo '?.?.?')"
-CODEX_VER="$(codex --version 2>/dev/null | awk '{print $NF}' || echo 'n/a')"
+if command -v codex >/dev/null 2>&1; then
+    CODEX_VER="$(codex --version 2>/dev/null | awk '{print $NF}')"
+    CODEX_VER="${CODEX_VER:-indisponibil}"
+else
+    CODEX_VER="indisponibil"
+fi
 FULL_PERMS="${CODEX_HA_FULL_PERMISSIONS:-true}"
-CONTEXT_STATUS="nu există încă"
+MCP_MODE="${CODEX_HA_MCP_MODE:-necunoscut}"
+CONTEXT_STATUS="nu există"
+AUTH_STATUS="necesară"
+LAYOUT_HELPER="${CODEX_PICKER_LAYOUT_HELPER:-/opt/scripts/codex-picker-layout.py}"
+ESC_TIMEOUT=1
+READ_TIMEOUT=1
 
-refresh_context_if_needed() {
-    local refresh_minutes="${HA_CONTEXT_REFRESH_MINUTES:-30}"
-    local pid frame status_file
-    local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+if [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
+    ESC_TIMEOUT=0.03
+    READ_TIMEOUT=0.1
+fi
 
-    if command -v ha-context >/dev/null 2>&1; then
-        status_file="/tmp/codex-ha-context-refresh.log"
-        printf '\033[?25l'
-        printf '\033[H\033[J'
-        printf '\n\n'
-        printf '  %s╭────────────────────────────────────────────────────────────╮%s\n' "$ACCENT_DIM" "$RESET"
-        printf '  %s│%s  %s%sPregătesc contextul Home Assistant%s                    %s│%s\n' "$ACCENT_DIM" "$RESET" "$BOLD" "$WHITE" "$RESET" "$ACCENT_DIM" "$RESET"
-        printf '  %s│%s  %sSe regenerează doar dacă este mai vechi de %s minute.%s  %s│%s\n' "$ACCENT_DIM" "$RESET" "$DIM$GREY" "$refresh_minutes" "$RESET" "$ACCENT_DIM" "$RESET"
-        printf '  %s╰────────────────────────────────────────────────────────────╯%s\n\n' "$ACCENT_DIM" "$RESET"
+if [ ! -f "$LAYOUT_HELPER" ]; then
+    LAYOUT_HELPER="$(dirname "${BASH_SOURCE[0]}")/codex-picker-layout.py"
+fi
 
-        ha-context --refresh-minutes "$refresh_minutes" >"$status_file" 2>&1 &
-        pid=$!
-        frame=0
-        while kill -0 "$pid" 2>/dev/null; do
-            printf '\r  %s%s%s %sVerific datele instalării tale...%s' \
-                "$ACCENT" "${frames[$((frame % ${#frames[@]}))]}" "$RESET" "$GREY" "$RESET"
-            frame=$((frame + 1))
-            sleep 0.08
-        done
+if [ -s "${CODEX_HOME:-$HOME/.codex}/auth.json" ] || [ -n "${OPENAI_API_KEY:-}" ]; then
+    AUTH_STATUS="gata"
+fi
 
-        if wait "$pid"; then
-            printf '\r  %s✓%s %sContext pregătit.%s                         \n' "$GREEN" "$RESET" "$GREY" "$RESET"
-        else
-            printf '\r  %s!%s %sContextul nu a putut fi actualizat acum.%s\n' "$YELLOW" "$RESET" "$GREY" "$RESET"
-        fi
-        sleep 0.35
-    fi
+cleanup_term() {
+    printf '\033[?25h'
+    stty echo icanon 2>/dev/null || true
 }
 
-regenerate_context_now() {
-    local status_file="/tmp/codex-ha-context-refresh.log"
-    local pid frame
-    local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
-
-    printf '\033[?25l'
-    printf '\033[H\033[J'
-    printf '\n\n'
-    printf '  %s╭────────────────────────────────────────────────────────────╮%s\n' "$ACCENT_DIM" "$RESET"
-    printf '  %s│%s  %s%sRegenerez contextul Home Assistant%s                  %s│%s\n' "$ACCENT_DIM" "$RESET" "$BOLD" "$WHITE" "$RESET" "$ACCENT_DIM" "$RESET"
-    printf '  %s│%s  %sCitesc entități, integrări, automatizări și erori.%s    %s│%s\n' "$ACCENT_DIM" "$RESET" "$DIM$GREY" "$RESET" "$ACCENT_DIM" "$RESET"
-    printf '  %s╰────────────────────────────────────────────────────────────╯%s\n\n' "$ACCENT_DIM" "$RESET"
-
-    if ! command -v ha-context >/dev/null 2>&1; then
-        printf '  %s!%s %sha-context nu este disponibil.%s\n' "$YELLOW" "$RESET" "$GREY" "$RESET"
-        sleep 1
-        return 0
-    fi
-
-    ha-context --force >"$status_file" 2>&1 &
-    pid=$!
-    frame=0
-    while kill -0 "$pid" 2>/dev/null; do
-        printf '\r  %s%s%s %sActualizez contextul...%s' \
-            "$ACCENT" "${frames[$((frame % ${#frames[@]}))]}" "$RESET" "$GREY" "$RESET"
-        frame=$((frame + 1))
-        sleep 0.08
-    done
-
-    if wait "$pid"; then
-        printf '\r  %s✓%s %sContext regenerat.%s                         \n' "$GREEN" "$RESET" "$GREY" "$RESET"
-    else
-        printf '\r  %s!%s %sRegenerarea contextului a eșuat.%s          \n' "$YELLOW" "$RESET" "$GREY" "$RESET"
-    fi
-    sleep 0.8
+on_winch() {
+    LAYOUT_DIRTY=1
 }
+
+trap cleanup_term EXIT INT TERM
+trap on_winch WINCH
 
 update_context_status() {
     local manifest="/data/ha-context/manifest.json"
     local agents_md="${CODEX_HOME:-$HOME/.codex}/AGENTS.md"
-
-    CONTEXT_STATUS="$(
-        python3 - "$manifest" "$agents_md" <<'PY'
+    CONTEXT_STATUS="$(python3 - "$manifest" "$agents_md" <<'PY'
 import json
 import pathlib
 import re
@@ -162,344 +97,344 @@ from datetime import datetime
 manifest = pathlib.Path(sys.argv[1])
 agents_md = pathlib.Path(sys.argv[2])
 raw = ""
-
 if manifest.exists():
     try:
         raw = json.loads(manifest.read_text(encoding="utf-8")).get("generated_at", "")
     except Exception:
-        raw = ""
-
+        pass
 if not raw and agents_md.exists():
-    match = re.search(r"^Last updated:\s*(.+)$", agents_md.read_text(encoding="utf-8", errors="replace"), re.M)
+    match = re.search(
+        r"^Last updated:\s*(.+)$",
+        agents_md.read_text(encoding="utf-8", errors="replace"),
+        re.M,
+    )
     if match:
         raw = match.group(1).strip()
-
 if not raw:
-    print("nu există încă")
-    raise SystemExit
-
-for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%d %H:%M:%S"):
+    print("nu există")
+else:
     try:
-        value = datetime.strptime(raw, fmt)
-        print("actualizat la " + value.strftime("%d.%m.%Y %H:%M"))
-        raise SystemExit
+        print(datetime.fromisoformat(raw.replace("Z", "+00:00")).strftime("%d.%m.%Y %H:%M"))
     except ValueError:
-        pass
-
-print("actualizat la " + raw)
+        print(raw)
 PY
-    )"
+)"
 }
 
-cleanup_term() {
-    printf '\033[?25h'
-    stty echo icanon 2>/dev/null || true
+configure_main_menu() {
+    MENU_KIND="main"
+    SELECTED=0
+    if tmux has-session -t "$TMUX_SESSION_NAME" 2>/dev/null; then
+        SESSION_LABEL="activă"
+        TITLES=(
+            "Continuă conversația"
+            "Începe o conversație nouă"
+            "Reia o conversație anterioară"
+            "Instrumente"
+        )
+        DESCRIPTIONS=(
+            "Revii imediat la conversația deschisă."
+            "Închide conversația activă și pornește una nouă."
+            "Închide conversația activă și deschide lista salvată."
+            "Actualizare, verificare și diagnostic."
+        )
+        ACTIONS=("__ATTACH__" "__NEW__" "__RESUME__" "__TOOLS__")
+    else
+        SESSION_LABEL="nouă"
+        TITLES=(
+            "Începe o conversație nouă"
+            "Reia o conversație anterioară"
+            "Configurează un dispozitiv nou"
+            "Verifică numele dispozitivelor"
+            "Verifică automatizările"
+            "Repară referințele greșite"
+            "Instrumente"
+        )
+        DESCRIPTIONS=(
+            "Deschide Codex fără o cerere prestabilită."
+            "Alege o conversație salvată de Codex."
+            "Pregătește corect un dispozitiv adăugat recent."
+            "Găsește și corectează numai numele neclare."
+            "Corectează numele, regulile și modul de rulare."
+            "Găsește entități lipsă și legături care nu mai merg."
+            "Actualizare, verificare și diagnostic."
+        )
+        ACTIONS=(
+            "__NEW__"
+            "__RESUME__"
+            "$PROMPT_NEW_DEVICE"
+            "$PROMPT_RENAME"
+            "$PROMPT_AUTOMATIONS"
+            "$PROMPT_FIX"
+            "__TOOLS__"
+        )
+    fi
+    COUNT=${#TITLES[@]}
+    LAYOUT_DIRTY=1
 }
-trap cleanup_term EXIT INT TERM
 
-repeat_char() {
-    local char="$1"
-    local count="$2"
-    local output=""
+configure_tools_menu() {
+    MENU_KIND="tools"
+    SELECTED=0
+    TITLES=(
+        "Actualizează datele Home Assistant"
+        "Verifică fișierele Home Assistant"
+        "Rulează diagnosticul complet"
+        "Arată conexiunile MCP"
+        "Înapoi"
+    )
+    DESCRIPTIONS=(
+        "Citește din nou entitățile, integrările și erorile."
+        "Verifică fișierele YAML și configurația Home Assistant."
+        "Verifică programele, accesul, skill-urile și siguranța."
+        "Arată serverele MCP cunoscute de Codex."
+        "Revino la conversații și acțiuni."
+    )
+    ACTIONS=("__REFRESH__" "__CHECK__" "__DOCTOR__" "__MCP__" "__BACK__")
+    COUNT=${#TITLES[@]}
+    LAYOUT_DIRTY=1
+}
 
-    while [ "$count" -gt 0 ]; do
-        output="${output}${char}"
-        count=$((count - 1))
+detect_box_width() {
+    local columns=0 rows=0
+    read -r rows columns < <(stty size 2>/dev/null || true)
+    : "$rows"
+    if ! [[ "$columns" =~ ^[0-9]+$ ]] || [ "$columns" -lt 20 ]; then
+        columns="${COLUMNS:-92}"
+    fi
+    if [ "$columns" -gt 92 ]; then
+        BOX_WIDTH=88
+    elif [ "$columns" -ge 32 ]; then
+        BOX_WIDTH=$((columns - 4))
+    else
+        BOX_WIDTH=28
+    fi
+}
+
+prepare_layout() {
+    local -a values=()
+    local banner_count=3
+    local value
+    detect_box_width
+    while IFS= read -r value; do
+        values+=("$value")
+    done < <(
+        python3 "$LAYOUT_HELPER" "$BOX_WIDTH" "$banner_count" "$COUNT" \
+            "Codex Terminal pentru Home Assistant" \
+            "Automatizări, fișiere YAML, panouri și depanare direct din /config" \
+            "Aplicație v${ADDON_VER}  ·  Codex ${CODEX_VER}  ·  /config" \
+            "${TITLES[@]}" -- "${DESCRIPTIONS[@]}"
+    )
+    PADDED_BANNER=("${values[@]:0:banner_count}")
+    PADDED_TITLES=("${values[@]:banner_count:COUNT}")
+    PADDED_DESCRIPTIONS=("${values[@]:banner_count+COUNT:COUNT}")
+    LAYOUT_DIRTY=0
+}
+
+repeat_rule() {
+    local output
+    printf -v output '%*s' "$1" ''
+    printf '%s' "${output// /─}"
+}
+
+render_item_block() {
+    local index="$1"
+    local selected="$2"
+    local marker num_color title_color desc_color border_color line1 line2
+    if [ "$selected" = "true" ]; then
+        marker="$ARROW"; num_color="$BOLD$ACCENT"; title_color="$BOLD$WHITE"
+        desc_color="$ACCENT_DIM"; border_color="$ACCENT"
+    else
+        marker=" "; num_color="$DIM$GREY"; title_color="$WHITE"
+        desc_color="$DIM$GREY"; border_color="$DARK_GREY"
+    fi
+    printf -v line1 '  %s│%s %s%s%s %s%2d%s  %s%s%s%s│%s' \
+        "$border_color" "$RESET" "$ACCENT" "$marker" "$RESET" \
+        "$num_color" "$((index + 1))" "$RESET" "$title_color" \
+        "${PADDED_TITLES[$index]}" "$RESET" "$border_color" "$RESET"
+    printf -v line2 '  %s│%s      %s%s%s%s│%s' \
+        "$border_color" "$RESET" "$desc_color" \
+        "${PADDED_DESCRIPTIONS[$index]}" "$RESET" "$border_color" "$RESET"
+    RENDERED_BLOCK="${line1}"$'\n'"${line2}"
+}
+
+render_full() {
+    local screen=$'\033[?25l\033[H\033[J'
+    local fill row=0 i
+    if [ "$LAYOUT_DIRTY" -eq 1 ]; then
+        prepare_layout
+    fi
+    fill="$(repeat_rule "$BOX_WIDTH")"
+    append_line() { screen+="$1"$'\n'; row=$((row + 1)); }
+
+    append_line ""
+    append_line "  ${ACCENT_DIM}╭${fill}╮${RESET}"
+    append_line "  ${ACCENT_DIM}│${RESET} ${BOLD}${WHITE}${PADDED_BANNER[0]}${RESET} ${ACCENT_DIM}│${RESET}"
+    append_line "  ${ACCENT_DIM}│${RESET} ${GREY}${PADDED_BANNER[1]}${RESET} ${ACCENT_DIM}│${RESET}"
+    append_line "  ${ACCENT_DIM}├${fill}┤${RESET}"
+    append_line "  ${ACCENT_DIM}│${RESET} ${ACCENT}${PADDED_BANNER[2]}${RESET} ${ACCENT_DIM}│${RESET}"
+    append_line "  ${ACCENT_DIM}╰${fill}╯${RESET}"
+    append_line ""
+    append_line "  ${GREEN}${DOT}${RESET} ${GREY}Autentificare:${RESET} ${WHITE}${AUTH_STATUS}${RESET}"
+    append_line "  ${BLUE}${DOT}${RESET} ${GREY}Conversație:${RESET} ${WHITE}${SESSION_LABEL}${RESET}"
+    append_line "  ${ACCENT}${DOT}${RESET} ${GREY}Date Home Assistant:${RESET} ${WHITE}${CONTEXT_STATUS}${RESET}"
+    if [ "$FULL_PERMS" = "true" ]; then
+        append_line "  ${YELLOW}${DOT}${RESET} ${GREY}Confirmări:${RESET} ${WHITE}dezactivate${RESET}  ${GREY}· MCP: ${MCP_MODE}${RESET}"
+    else
+        append_line "  ${GREEN}${DOT}${RESET} ${GREY}Confirmări:${RESET} ${WHITE}activate${RESET}  ${GREY}· MCP: ${MCP_MODE}${RESET}"
+    fi
+    append_line ""
+    if [ "$MENU_KIND" = "tools" ]; then
+        append_line "  ${BOLD}${WHITE}Instrumente${RESET}"
+    else
+        append_line "  ${BOLD}${WHITE}Alege ce vrei să faci${RESET}"
+    fi
+    append_line "  ${DARK_GREY}┌${fill}┐${RESET}"
+    MENU_FIRST_ROW=$((row + 1))
+    for ((i = 0; i < COUNT; i++)); do
+        if [ "$i" -eq "$SELECTED" ]; then render_item_block "$i" true; else render_item_block "$i" false; fi
+        screen+="${RENDERED_BLOCK}"$'\n'
+        row=$((row + 2))
     done
+    append_line "  ${DARK_GREY}└${fill}┘${RESET}"
+    append_line ""
+    if [ "$BOX_WIDTH" -lt 62 ]; then
+        append_line "  ${ACCENT}↑↓${GREY} mută  ${ACCENT}Enter${GREY} alege  ${ACCENT}Q${GREY} ieșire${RESET}"
+    else
+        append_line "  ${ACCENT}↑↓${GREY} navighează   ${ACCENT}1-${COUNT}${GREY} alege direct   ${ACCENT}Enter${GREY} deschide   ${ACCENT}Q / Esc${GREY} ieșire${RESET}"
+    fi
+    REST_ROW=$row
+    printf '%s' "$screen"
+}
 
+render_selection_change() {
+    local previous="$1" current="$2"
+    local previous_row=$((MENU_FIRST_ROW + previous * 2))
+    local current_row=$((MENU_FIRST_ROW + current * 2))
+    local output=""
+    render_item_block "$previous" false
+    output+=$'\033['"${previous_row}"';1H'"${RENDERED_BLOCK}"
+    render_item_block "$current" true
+    output+=$'\033['"${current_row}"';1H'"${RENDERED_BLOCK}"
+    output+=$'\033['"${REST_ROW}"';1H'
     printf '%s' "$output"
 }
 
-pad_text() {
-    local text="$1"
-    local target_width="$2"
-    local cache_key="${target_width}|${text}"
-    local padded
-
-    if [ "${PAD_CACHE[$cache_key]+set}" = "set" ]; then
-        printf '%s' "${PAD_CACHE[$cache_key]}"
-        return 0
-    fi
-
-    padded="$(python3 - "$target_width" "$text" <<'PY'
-import sys
-import unicodedata
-
-target = int(sys.argv[1])
-text = sys.argv[2]
-
-def cell_width(value: str) -> int:
-    width = 0
-    for char in value:
-        if unicodedata.combining(char):
-            continue
-        if unicodedata.east_asian_width(char) in {"F", "W"}:
-            width += 2
-        else:
-            width += 1
-    return width
-
-padding = max(target - cell_width(text), 0)
-sys.stdout.write(text + (" " * padding))
-PY
-)"
-    PAD_CACHE[$cache_key]="$padded"
-    printf '%s' "$padded"
-}
-
-draw_rule() {
-    local left="$1"
-    local fill="$2"
-    local right="$3"
-
-    printf '  %s%s%s%s%s\n' "$ACCENT_DIM" "$left" "$(repeat_char "$fill" "$BOX_WIDTH")" "$right" "$RESET"
-}
-
-draw_box_text() {
-    local text="$1"
-    local color="${2:-$WHITE}"
-    local padded
-
-    padded="$(pad_text "$text" "$((BOX_WIDTH - 2))")"
-    printf '  %s│%s %s%s%s %s│%s\n' "$ACCENT_DIM" "$RESET" "$color" "$padded" "$RESET" "$ACCENT_DIM" "$RESET"
-}
-
-intro_animation() {
-    local i fill rest
-
-    printf '\033[?25l'
-    for ((i = 0; i <= 18; i++)); do
-        fill="$(repeat_char '━' "$i")"
-        rest="$(repeat_char '─' "$((18 - i))")"
-        printf '\033[H\033[J'
-        printf '\n\n'
-        printf '  %s%sCodex Terminal%s\n\n' "$BOLD" "$WHITE" "$RESET"
-        printf '  %s[%s%s%s%s]%s  %sHome Assistant workspace%s\n' \
-            "$DARK_GREY" "$ACCENT" "$fill" "$DARK_GREY" "$rest" "$RESET" "$GREY" "$RESET"
-        sleep 0.025
-    done
-}
-
-draw_banner() {
-    printf '\n'
-    draw_rule '╭' '─' '╮'
-    draw_box_text "Codex Terminal pentru Home Assistant" "$BOLD$WHITE"
-    draw_box_text "Automatizări, YAML, dashboard-uri și depanare direct din /config" "$GREY"
-    draw_rule '├' '─' '┤'
-    draw_box_text "Add-on v${ADDON_VER}  ·  Codex ${CODEX_VER}  ·  /config" "$ACCENT"
-    draw_rule '╰' '─' '╯'
-}
-
-draw_status() {
-    local perms_marker perms_color perms_label session_color
-    if [ "$FULL_PERMS" = "true" ]; then
-        perms_marker="$DOT"
-        perms_color="$YELLOW"
-        perms_label="Permisiuni automate: pornite"
-    else
-        perms_marker="$DOT"
-        perms_color="$GREEN"
-        perms_label="Permisiuni automate: oprite (Codex va cere aprobare)"
-    fi
-
-    if [ "$SESSION_STATE" = "activă" ]; then
-        session_color="$GREEN"
-    else
-        session_color="$BLUE"
-    fi
-
-    printf '\n'
-    printf '  %s%s%s %s%s%s\n' "$perms_color" "$perms_marker" "$RESET" "$GREY" "$perms_label" "$RESET"
-    printf '  %s%s%s %sSesiune terminal:%s %scodex%s %s(%s)%s\n' \
-        "$session_color" "$DOT" "$RESET" "$GREY" "$RESET" "$BOLD$WHITE" "$RESET" "$DIM$GREY" "$SESSION_STATE" "$RESET"
-    printf '  %s%s%s %sContext:%s %s%s%s\n' \
-        "$ACCENT" "$DOT" "$RESET" "$GREY" "$RESET" "$DIM$GREY" "$CONTEXT_STATUS" "$RESET"
-}
-
-draw_menu_item() {
-    local index="$1"
-    local title="$2"
-    local description="$3"
-    local marker num_color title_color desc_color border_color
-    local title_padded desc_padded
-
-    if [ "$((index - 1))" -eq "$SELECTED" ]; then
-        marker="${ARROW}"
-        num_color="${BOLD}${ACCENT}"
-        title_color="${BOLD}${WHITE}"
-        desc_color="${ACCENT_DIM}"
-        border_color="$ACCENT"
-    else
-        marker=" "
-        num_color="${DIM}${GREY}"
-        title_color="${WHITE}"
-        desc_color="${DIM}${GREY}"
-        border_color="$DARK_GREY"
-    fi
-
-    title_padded="$(pad_text "$title" "$((BOX_WIDTH - 7))")"
-    desc_padded="$(pad_text "$description" "$((BOX_WIDTH - 6))")"
-
-    printf '  %s│%s %s%s%s %s%2d%s  %s%s%s%s│%s\n' \
-        "$border_color" "$RESET" "$ACCENT" "$marker" "$RESET" \
-        "$num_color" "$index" "$RESET" \
-        "$title_color" "$title_padded" "$RESET" "$border_color" "$RESET"
-    printf '  %s│%s      %s%s%s%s│%s\n' \
-        "$border_color" "$RESET" "$desc_color" "$desc_padded" "$RESET" "$border_color" "$RESET"
-}
-
-draw_footer() {
-    printf '\n'
-    printf '  %s↑↓%s navighează   %s1-%d%s salt rapid   %sEnter%s pornește   %sQ / Esc%s părăsește\n' \
-        "$ACCENT" "$GREY" "$ACCENT" "$COUNT" "$GREY" "$ACCENT" "$GREY" "$ACCENT" "$RESET"
-}
-
-draw_menu() {
-    local i
-
-    printf '\n  %s%sAlege o acțiune%s\n' "$BOLD" "$WHITE" "$RESET"
-    printf '  %s┌%s┐%s\n' "$DARK_GREY" "$(repeat_char '─' "$BOX_WIDTH")" "$RESET"
-
-    for ((i = 0; i < COUNT; i++)); do
-        draw_menu_item "$((i + 1))" "${TITLES[$i]}" "${DESCRIPTIONS[$i]}"
-    done
-
-    printf '  %s└%s┘%s\n' "$DARK_GREY" "$(repeat_char '─' "$BOX_WIDTH")" "$RESET"
-    draw_footer
-}
-
-render() {
-    # Cursor home + clear screen (smoother than `clear`, no flicker in ttyd)
-    printf '\033[H\033[J'
-    draw_banner
-    draw_status
-    draw_menu
+move_selection() {
+    local direction="$1"
+    SELECTED=$(((SELECTED + direction + COUNT) % COUNT))
 }
 
 show_launching() {
-    printf '\033[H\033[J'
-    printf '\n\n'
-    printf '  %s%s%s%s  %s%s%s\n\n' "$ACCENT" "$BOLD" "$ARROW" "$RESET" "$BOLD$WHITE" "${TITLES[$SELECTED]}" "$RESET"
-    printf '  %s%sInițializare sesiune tmux...%s\n\n' "$DIM" "$GREY" "$RESET"
+    printf '\033[H\033[J\n\n  %s%s%s%s  %s%s%s\n\n' \
+        "$ACCENT" "$BOLD" "$ARROW" "$RESET" "$BOLD$WHITE" "$1" "$RESET"
+    printf '  %sPornesc Codex...%s\n\n' "$GREY" "$RESET"
 }
 
-launch_with_prompt() {
-    local prompt="$1"
-    local cmd
+build_codex_command() {
+    local mode="$1" prompt="${2:-}"
+    local -a args=(codex)
+    if [ "$FULL_PERMS" = "true" ]; then args+=(--dangerously-bypass-approvals-and-sandbox); fi
+    args+=(--cd "$CODEX_WORKDIR")
+    if [ "$mode" = "resume" ]; then args+=(resume); elif [ -n "$prompt" ]; then args+=("$prompt"); fi
+    printf -v CODEX_COMMAND '%q ' "${args[@]}"
+    CODEX_COMMAND="${CODEX_COMMAND% }"
+}
 
-    case "$prompt" in
+start_codex_session() {
+    local mode="$1" title="$2" prompt="${3:-}"
+    tmux kill-session -t "$TMUX_SESSION_NAME" 2>/dev/null || true
+    build_codex_command "$mode" "$prompt"
+    cleanup_term
+    show_launching "$title"
+    if [ "${CODEX_PICKER_NO_EXEC:-false}" = "true" ]; then printf '%s\n' "$CODEX_COMMAND"; return 0; fi
+    exec tmux new-session -s "$TMUX_SESSION_NAME" "$CODEX_COMMAND"
+}
+
+run_tool() {
+    local action="$1" title="$2" result=0
+    printf '\033[?25h\033[H\033[J\n  %s%s%s\n\n' "$BOLD" "$title" "$RESET"
+    case "$action" in
+        "__REFRESH__") ha-context --force || result=$? ;;
+        "__CHECK__") ha-safe-edit check || result=$? ;;
+        "__DOCTOR__") codex-ha doctor || result=$? ;;
+        "__MCP__") codex mcp list || result=$? ;;
+    esac
+    printf '\n'
+    if [ "$result" -eq 0 ]; then
+        printf '  %s✓%s %sOperațiunea s-a încheiat cu succes.%s\n' "$GREEN" "$RESET" "$GREY" "$RESET"
+    else
+        printf '  %s!%s %sOperațiunea nu s-a încheiat cu succes (cod %d).%s\n' \
+            "$YELLOW" "$RESET" "$GREY" "$result" "$RESET"
+    fi
+    printf '  %sApasă orice tastă pentru a reveni.%s\033[?25l' "$GREY" "$RESET"
+    IFS= read -rsn1 _ || true
+    if [ "$action" = "__REFRESH__" ]; then update_context_status; fi
+    LAYOUT_DIRTY=1
+    render_full
+}
+
+activate_selected() {
+    local action="${ACTIONS[$SELECTED]}" title="${TITLES[$SELECTED]}"
+    case "$action" in
         "__ATTACH__")
             cleanup_term
+            if [ "${CODEX_PICKER_NO_EXEC:-false}" = "true" ]; then printf 'tmux attach-session -t %q\n' "$TMUX_SESSION_NAME"; return 0; fi
             exec tmux attach-session -t "$TMUX_SESSION_NAME"
             ;;
-        "__REGENERATE_CONTEXT__")
-            regenerate_context_now
-            update_context_status
-            render
-            return
-            ;;
-        "__RESTART__")
-            restart_terminal
-            ;;
+        "__NEW__") start_codex_session new "$title" ;;
+        "__RESUME__") start_codex_session resume "$title" ;;
+        "__TOOLS__") configure_tools_menu; render_full ;;
+        "__BACK__") configure_main_menu; render_full ;;
+        "__REFRESH__"|"__CHECK__"|"__DOCTOR__"|"__MCP__") run_tool "$action" "$title" ;;
+        *) start_codex_session new "$title" "$action" ;;
     esac
-
-    cleanup_term
-    if [ -n "$prompt" ]; then
-        cmd="${CODEX_BASE_COMMAND} $(printf '%q' "$prompt")"
-    else
-        cmd="$CODEX_BASE_COMMAND"
-    fi
-    show_launching
-    exec tmux new-session -s "$TMUX_SESSION_NAME" "$cmd"
-}
-
-restart_terminal() {
-    cleanup_term
-    printf '\033[H\033[J'
-    printf '\n  %s%sRepornește terminalul...%s\n\n' "$BOLD" "$WHITE" "$RESET"
-    tmux kill-session -t "$TMUX_SESSION_NAME" 2>/dev/null || true
-    exec "$0"
-}
-
-configure_menu() {
-    if tmux has-session -t "$TMUX_SESSION_NAME" 2>/dev/null; then
-        TITLES=(
-            "Continuă sesiunea deschisă"
-            "Regenerează contextul"
-            "Repornește terminalul"
-        )
-        DESCRIPTIONS=(
-            "Revii la conversația deja pornită."
-            "Citește din nou datele Home Assistant."
-            "Închide sesiunea și revine la meniu."
-        )
-        PROMPTS=(
-            "__ATTACH__"
-            "__REGENERATE_CONTEXT__"
-            "__RESTART__"
-        )
-        COUNT=${#TITLES[@]}
-        SESSION_STATE="activă"
-    else
-        SESSION_STATE="nouă"
-    fi
 }
 
 main() {
-    refresh_context_if_needed
+    local key rest final previous
     update_context_status
-    configure_menu
-    intro_animation
-
-    printf '\033[?25l'                                  # hide cursor
+    configure_main_menu
+    printf '\033[?25l'
     stty -echo -icanon time 0 min 1 2>/dev/null || true
-
-    render
-
-    local key rest
+    render_full
     while true; do
-        key=""
-        rest=""
-        IFS= read -rsn1 key
+        if [ "$LAYOUT_DIRTY" -eq 1 ]; then render_full; fi
+        key=""; rest=""
+        IFS= read -rsn1 -t "$READ_TIMEOUT" key || continue
         if [ "$key" = $'\033' ]; then
-            IFS= read -rsn2 -t 0.05 rest 2>/dev/null || true
-            if [ -n "${rest}" ]; then
-                key="${key}${rest}"
+            IFS= read -rsn1 -t "$ESC_TIMEOUT" rest 2>/dev/null || true
+            if [ "$rest" = "[" ]; then
+                final=""
+                IFS= read -rsn1 -t "$ESC_TIMEOUT" final 2>/dev/null || true
+                rest="${rest}${final}"
             fi
+            if [ -n "$rest" ]; then key="${key}${rest}"; fi
         fi
-
+        previous=$SELECTED
         case "$key" in
-            $'\033[A')
-                SELECTED=$(((SELECTED - 1 + COUNT) % COUNT))
-                render
-                ;;
-            $'\033[B')
-                SELECTED=$(((SELECTED + 1) % COUNT))
-                render
-                ;;
+            $'\033[A'|'k'|'K') move_selection -1 ;;
+            $'\033[B'|'j'|'J') move_selection 1 ;;
+            ''|$'\n'|$'\r') activate_selected; continue ;;
             $'\033')
-                cleanup_term
-                printf '\033[H\033[J'
-                exit 0
+                if [ "$MENU_KIND" = "tools" ]; then configure_main_menu; render_full; continue; fi
+                cleanup_term; printf '\033[H\033[J'; exit 0
                 ;;
-            ''|$'\n'|$'\r')
-                launch_with_prompt "${PROMPTS[$SELECTED]}"
-                ;;
-            'q'|'Q')
-                cleanup_term
-                printf '\033[H\033[J'
-                exit 0
-                ;;
+            'q'|'Q') cleanup_term; printf '\033[H\033[J'; exit 0 ;;
             [1-9])
-                if [ "$key" -ge 1 ] && [ "$key" -le "$COUNT" ]; then
+                if [ "$key" -le "$COUNT" ]; then
                     SELECTED=$((10#$key - 1))
-                    render
-                    sleep 0.1
-                    launch_with_prompt "${PROMPTS[$SELECTED]}"
+                    render_selection_change "$previous" "$SELECTED"
+                    activate_selected
                 fi
+                continue
                 ;;
+            *) continue ;;
         esac
+        if [ "$SELECTED" -ne "$previous" ]; then render_selection_change "$previous" "$SELECTED"; fi
     done
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

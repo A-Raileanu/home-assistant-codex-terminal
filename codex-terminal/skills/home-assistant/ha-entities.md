@@ -1,13 +1,13 @@
 ---
 name: ha-entities
-description: Entry point rapid pentru entitati Home Assistant: friendly_name explicit, entity_id, vocabular romanesc de functii, device_class si post-redenumire.
+description: Punct de pornire pentru entități Home Assistant: `friendly_name`, `entity_id`, vocabular românesc, `device_class` și verificări după redenumire.
 ---
 
-# Entitati — Entry Point
+# Entitati — Punct de pornire
 
 Pentru vocabularul complet si exemple, citeste [references/ha-entities.md](references/ha-entities.md). Pentru impactul redenumirilor, citeste [ha-refactoring.md](ha-refactoring.md).
 
-## Fast Path
+## Pași rapizi
 
 1. Friendly name explicit pe fiecare entitate: `[Area] Nume dispozitiv - Functie`.
 2. Entitatea principala fara functie separata: `[Area] Nume dispozitiv`.
@@ -22,10 +22,10 @@ Pentru vocabularul complet si exemple, citeste [references/ha-entities.md](refer
 | Ai nevoie de | Sectiune |
 |---|---|
 | Format friendly name | [references/ha-entities.md](references/ha-entities.md#format-canonic) |
-| Vocabular functii | [references/ha-entities.md](references/ha-entities.md#vocabular-standard-doar-partea-functie) |
+| Vocabular functii | [references/ha-entities.md](references/ha-entities.md#vocabular-standard-doar-partea-funcție) |
 | `device_class` / `state_class` | [references/ha-entities.md](references/ha-entities.md#device-classes-recomandate) |
 | Reguli `entity_id` | [references/ha-entities.md](references/ha-entities.md#entity-ids) |
-| Dezactivare post-import | [references/ha-entities.md](references/ha-entities.md#post-redenumire-dezactivare-entitati--verificare-referinte) |
+| Dezactivare post-import | [references/ha-entities.md](references/ha-entities.md#post-redenumire-dezactivare-entități-verificare-referințe) |
 
 ## TL;DR
 

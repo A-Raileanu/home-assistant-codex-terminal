@@ -1,108 +1,77 @@
 # Codex Terminal
 
-Codex Terminal provides a browser terminal for OpenAI Codex CLI inside Home Assistant.
+Codex Terminal adaugă OpenAI Codex în bara laterală Home Assistant. Deschizi aplicația, te autentifici o singură dată și lucrezi direct în `/config`.
 
-The add-on follows the same usage model as Claude Terminal-style Home Assistant add-ons: open the sidebar item, log in interactively with the AI CLI, and work from `/config`.
+## Prima pornire
 
-## First Run
+1. Pornește aplicația.
+2. Deschide **Codex Terminal** din bara laterală.
+3. Rulează `codex login` dacă autentificarea nu pornește automat.
+4. Alege o conversație din meniul de pornire.
 
-1. Start the add-on.
-2. Open **Codex Terminal** from the sidebar.
-3. Run `codex login` if Codex does not prompt automatically.
-4. Start Codex with:
+Autentificarea și configurarea Codex sunt păstrate în `/data/.codex`.
 
-```bash
-codex --cd /config
-```
+## Opțiuni
 
-Authentication and Codex configuration persist in `/data/.codex`.
-
-## Options
-
-| Option | Default | Description |
+| Opțiune | Valoare implicită | Rol |
 | --- | --- | --- |
-| `auto_launch_codex` | `true` | Automatically launch Codex when opening the terminal. |
-| `ha_smart_context` | `true` | Generate Home Assistant context and a Home Assistant Codex skill on startup. |
-| `ha_context_refresh_minutes` | `30` | Only regenerate automatic context when the cached file is older than this many minutes. |
-| `context_detail_level` | `standard` | Context verbosity: `summary`, `standard`, or `full`. |
-| `include_addon_logs` | `false` | Include add-on log samples in generated context. |
-| `enable_ha_mcp` | `true` | Register the Home Assistant MCP server with Codex. |
-| `mcp_mode` | `ha-mcp` | Choose `ha-mcp`, `official`, `both`, or `disabled`. |
-| `ha_mcp_version` | `3.5.1` | Version used for `ha-mcp` server registration. |
-| `readonly_mode` | `false` | Prevent helper-command edits. |
-| `enable_device_control` | `false` | Safety marker for device-control workflows. |
-| `codex_full_permissions` | `true` | Launch Codex with `--dangerously-bypass-approvals-and-sandbox` so it does not prompt for approvals. Set to `false` to re-enable per-action confirmation and the sandbox. |
-| `safe_edit_backup_retention_days` | `30` | Remove backup files older than this many days. |
-| `persistent_apk_packages` | `[]` | Alpine packages to install on every startup. |
-| `persistent_pip_packages` | `[]` | Python packages to install on every startup. |
+| `auto_launch_codex` | `true` | Afișează meniul de pornire când deschizi terminalul. |
+| `ha_smart_context` | `true` | Pregătește automat date despre sistemul Home Assistant. |
+| `ha_context_refresh_minutes` | `30` | Actualizează datele automate numai când sunt mai vechi decât acest interval. |
+| `context_detail_level` | `standard` | Cantitatea de date: `summary`, `standard` sau `full`. |
+| `include_addon_logs` | `false` | Include fragmente din jurnalele aplicațiilor. |
+| `enable_ha_mcp` | `true` | Permite înregistrarea serverului MCP Home Assistant. |
+| `mcp_mode` | `ha-mcp` | Alege `ha-mcp`, `official`, `both` sau `disabled`. |
+| `ha_mcp_version` | `7.12.0` | Versiunea serverului `ha-mcp`. |
+| `readonly_mode` | `false` | Oprește modificările făcute de comenzile ajutătoare. |
+| `enable_device_control` | `false` | Permite fluxurile care controlează dispozitive. |
+| `codex_full_permissions` | `true` | Rulează Codex fără confirmare pentru fiecare comandă. |
+| `safe_edit_backup_retention_days` | `30` | Șterge copiile de siguranță mai vechi decât numărul ales de zile. |
+| `persistent_apk_packages` | `[]` | Pachete Alpine reinstalate la pornire. |
+| `persistent_pip_packages` | `[]` | Pachete Python reinstalate la pornire. |
 
-## Home Assistant Context
+## Date Home Assistant
 
-Run this command to refresh generated context:
+`ha-context` scrie datele generate în:
+
+- `$CODEX_HOME/AGENTS.md`
+- `$CODEX_HOME/skills/home-assistant-instance/SKILL.md`
+- `/data/ha-context/*.json`
+- `/data/ha-context/rename_memory.json`
+
+Pentru actualizare imediată:
 
 ```bash
-ha-context
 ha-context --force
 ```
 
-It writes:
+## Integrarea MCP
 
-- `$CODEX_HOME/AGENTS.md`
-- `$CODEX_HOME/skills/home-assistant-instance/SKILL.md` — per-installation runtime config and safety flags
+Versiunea implicită `ha-mcp 7.12.0` este instalată în imagine și pornește fără descărcare la fiecare restart. Dacă alegi altă versiune prin `ha_mcp_version`, aplicația o pornește cu `uvx`.
 
-Bundled separately by the add-on (synced from `/opt/skills` on version change):
+Înregistrarea MCP este omisă când `readonly_mode` este activ sau `enable_device_control` este dezactivat.
 
-- `$CODEX_HOME/skills/home-assistant/SKILL.md` — compact umbrella index with topic entrypoints (`ha-*.md`), detailed docs under `references/`, and helper scripts under `scripts/`.
-- `/data/ha-context/rename_memory.json` — generated runtime memory for renamed devices/entities, derived from Home Assistant registries.
-
-The context includes Home Assistant version, installed add-ons, entity counts, recent errors, and useful API examples.
-
-## MCP Integration
-
-When `enable_ha_mcp` is true, startup runs:
-
-```bash
-codex mcp add home-assistant \
-  --env HOMEASSISTANT_URL=http://supervisor/core \
-  --env HOMEASSISTANT_TOKEN=$SUPERVISOR_TOKEN \
-  -- uvx --index-strategy unsafe-best-match ha-mcp@$HA_MCP_VERSION
-```
-
-Check it with:
+Verificare:
 
 ```bash
 codex mcp list
-```
-
-Run diagnostics with:
-
-```bash
 codex-ha doctor
 ```
 
-Use safe editing with:
+## Editare sigură
 
 ```bash
 ha-safe-edit backup /config/configuration.yaml
 ha-safe-edit check
+ha-safe-edit plan /config/automations.yaml -- sh -c 'comanda-de-editare'
+ha-safe-edit apply <plan_id>
 ```
 
-MCP registration is skipped when `readonly_mode` is enabled or `enable_device_control` is false.
-The MCP server gives Codex Home Assistant tools. Treat it as broad control over your Home Assistant instance.
+Planul păstrează fișierul original, verifică rezultatul și aplică schimbarea numai după confirmare.
 
-## Persistent Packages
+## Depanare
 
-Install packages that survive add-on rebuilds and restarts:
-
-```bash
-persist-install apk htop
-persist-install pip requests
-persist-install list
-```
-
-## Troubleshooting
-
-- Check add-on logs if the terminal does not load.
-- Run `codex-ha doctor` to verify required commands, the HA API, MCP servers, skills, and safety options.
-- Run `ha-context` to verify Supervisor API access.
-- Disable `enable_ha_mcp` if MCP setup fails and you only need the terminal.
+- Rulează `codex-ha doctor` pentru programe, acces, MCP, skill-uri și opțiuni de siguranță.
+- Rulează `ha-context --force` pentru a verifica accesul la Supervisor.
+- Verifică jurnalul aplicației dacă terminalul nu se deschide.
+- Alege `mcp_mode: disabled` dacă ai nevoie numai de terminal.

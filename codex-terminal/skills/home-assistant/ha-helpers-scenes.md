@@ -1,13 +1,13 @@
 ---
 name: ha-helpers-scenes
-description: Entry point rapid pentru helpers si scene Home Assistant: input_boolean, input_number, input_select, timer, counter, template helper si scene.
+description: Punct de pornire pentru elemente ajutătoare și scene Home Assistant: `input_boolean`, `input_number`, `input_select`, temporizatoare, contoare și șabloane.
 ---
 
-# Helpers si Scene — Entry Point
+# Helpers si Scene — Punct de pornire
 
 Pentru matricea completa si exemple YAML, citeste [references/ha-helpers-scenes.md](references/ha-helpers-scenes.md).
 
-## Fast Path Helpers
+## Pași rapizi Helpers
 
 1. Foloseste helper nativ cand exprima starea mai clar decat un template.
 2. `input_boolean`: moduri, flaguri, override manual.
@@ -17,7 +17,7 @@ Pentru matricea completa si exemple YAML, citeste [references/ha-helpers-scenes.
 6. `counter`: numarari persistente.
 7. Template helper doar cand logica derivata nu are alternativa nativa.
 
-## Fast Path Scene
+## Pași rapizi Scene
 
 1. Scena seteaza o stare dorita; scriptul executa pasi.
 2. Alias in romana, clar si scurt.
@@ -28,7 +28,7 @@ Pentru matricea completa si exemple YAML, citeste [references/ha-helpers-scenes.
 
 | Ai nevoie de | Sectiune |
 |---|---|
-| Matrice alegere helper | [references/ha-helpers-scenes.md](references/ha-helpers-scenes.md#ghid-selectare-helper-cand-sa-folosesti-ce) |
+| Matrice alegere helper | [references/ha-helpers-scenes.md](references/ha-helpers-scenes.md#ghid-selectare-helper-când-să-folosești-ce) |
 | Exemple input_boolean/input_number/timer/counter | [references/ha-helpers-scenes.md](references/ha-helpers-scenes.md#helpers) |
 | Scene vs scripturi | [references/ha-helpers-scenes.md](references/ha-helpers-scenes.md#scene-vs-scripturi) |
 | Exemple scene | [references/ha-helpers-scenes.md](references/ha-helpers-scenes.md#exemple) |

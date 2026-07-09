@@ -36,20 +36,20 @@ jobs:
   build:
     name: Build (${{ matrix.arch }})
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: amd64
             platform: linux/amd64
-            build_from: ghcr.io/home-assistant/amd64-base:3.21
+            build_from: ghcr.io/home-assistant/amd64-base-python:3.13-alpine3.22
           - arch: aarch64
             platform: linux/arm64
-            build_from: ghcr.io/home-assistant/aarch64-base:3.21
+            build_from: ghcr.io/home-assistant/aarch64-base-python:3.13-alpine3.22
           - arch: armv7
             platform: linux/arm/v7
-            build_from: ghcr.io/home-assistant/armv7-base:3.21
+            build_from: ghcr.io/home-assistant/armv7-base-python:3.13-alpine3.22
     steps:
       - uses: actions/checkout@v4
 
@@ -125,6 +125,25 @@ jobs:
               echo "OK: $bin"
             done
           '
+
+      - name: Smoke test - pinned runtime versions
+        if: matrix.arch == 'amd64'
+        run: |
+          docker run --rm --entrypoint /bin/bash test/codex-terminal:amd64 -c '
+            codex --version | grep -F "0.144.1"
+            python3 -c "import sys; assert (3, 13) <= sys.version_info < (3, 15)"
+            test -x /opt/ha-mcp/bin/ha-mcp
+            /opt/ha-mcp/bin/python -c "import ha_mcp, importlib.metadata; assert importlib.metadata.version(\"ha-mcp\") == \"7.12.0\""
+          '
+
+      - name: Test picker and ingress proxy
+        if: matrix.arch == 'amd64'
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace:ro" \
+            --entrypoint /bin/bash \
+            test/codex-terminal:amd64 \
+            -c 'python3 -m unittest discover -s /workspace/codex-terminal/tests -p "test_*.py"'
 
       - name: Smoke test - validate bundled skills
         if: matrix.arch == 'amd64'

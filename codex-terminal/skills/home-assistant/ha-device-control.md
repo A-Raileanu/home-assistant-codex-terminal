@@ -1,13 +1,13 @@
 ---
 name: ha-device-control
-description: Entry point rapid pentru service calls si control device-uri Home Assistant: target/data, lumini, climate, cover, media, vacuum, ZHA/Z2M si troubleshooting.
+description: Punct de pornire pentru apeluri de servicii și controlul dispozitivelor Home Assistant: lumini, climatizare, jaluzele, media, aspiratoare, ZHA/Z2M și depanare.
 ---
 
-# Device Control — Entry Point
+# Device Control — Punct de pornire
 
 Pentru detalii si exemple complete, citeste [references/ha-device-control.md](references/ha-device-control.md) doar pentru domeniul implicat.
 
-## Fast Path
+## Pași rapizi
 
 1. Foloseste `action: domain.service`, `target:` pentru entitati/arii/devices si `data:` pentru parametri.
 2. Preferi `entity_id` in loc de `device_id` cand exista entitate stabila.
@@ -20,10 +20,10 @@ Pentru detalii si exemple complete, citeste [references/ha-device-control.md](re
 
 | Ai nevoie de | Sectiune |
 |---|---|
-| Structura service call | [references/ha-device-control.md](references/ha-device-control.md#service-calls-best-practices) |
-| ZHA/Zigbee2MQTT | [references/ha-device-control.md](references/ha-device-control.md#zigbee-buttonremote-patterns) |
-| Lumini, climate, cover, media, vacuum | [references/ha-device-control.md](references/ha-device-control.md#domain-specific-patterns) |
-| Troubleshooting si add-on development | [references/ha-device-control.md](references/ha-device-control.md#diagnosticare-si-troubleshooting) |
+| Structura service call | [references/ha-device-control.md](references/ha-device-control.md#apeluri-de-servicii-bune-practici) |
+| ZHA/Zigbee2MQTT | [references/ha-device-control.md](references/ha-device-control.md#modele-pentru-butoane-și-telecomenzi-zigbee) |
+| Lumini, climate, cover, media, vacuum | [references/ha-device-control.md](references/ha-device-control.md#modele-specifice-pe-domeniu) |
+| Depanare si add-on development | [references/ha-device-control.md](references/ha-device-control.md#diagnosticare-și-depanare) |
 
 ## TL;DR
 

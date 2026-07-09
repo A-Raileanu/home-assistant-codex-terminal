@@ -1,6 +1,6 @@
 ---
 name: ha-refactoring
-description: Refactorizare sigură HA — workflow 5 pași, sibling discovery, Config-Entry-Groups, Config-Entry-Data (blind spots), storage dashboards, integrări YAML-only. Citește ÎNTÂI când redenumești sau restructurezi configurație existentă.
+description: Refactorizare sigură HA — flux 5 pași, sibling discovery, Config-Entry-Groups, Config-Entry-Data (blind spots), storage dashboards, integrări YAML-only. Citește ÎNTÂI când redenumești sau restructurezi configurație existentă.
 ---
 
 # Refactorizare Sigură — Home Assistant
@@ -17,18 +17,18 @@ Backup: stochează toate fișierele de backup sub `/data/safe-edit-backups`. Nu 
 
 ---
 
-## Workflow universal (5 pași)
+## Flux universal (5 pași)
 
-Înainte de Pasul 1, dacă schimbarea atinge device-uri sau entități, citește `/data/ha-context/rename_memory.json`. Elementele cu `skip_rename_by_default: true`, `is_canonical_name: true` sau `is_canonical_friendly_name: true` se sar implicit. Redenumește-le din nou doar dacă utilizatorul cere explicit.
+Înainte de Pasul 1, dacă schimbarea atinge dispozitive sau entități, citește `/data/ha-context/rename_memory.json`. Elementele cu `skip_rename_by_default: true`, `is_canonical_name: true` sau `is_canonical_friendly_name: true` se sar implicit. Redenumește-le din nou doar dacă utilizatorul cere explicit.
 
 ### Pasul 1 — Identifică scopul complet al schimbării
 
 Răspunde la trei întrebări înainte de a atinge orice:
 
-1. **Ce se schimbă?** Entity ID, structura automatizării, tipul senzorului, semantica trigger-ului.
+1. **Ce se schimbă?** Entity ID, structura automatizării, tipul senzorului, semantica declanșatorului.
 2. **Ce entități sibling partajează același device?** Fă un query pe device pentru a lista toate entitățile pe care le deține (senzor baterie, update entity, diagnostic button). Planifică schimbările pentru toți siblings împreună.
    - Via REST API: `GET /api/states/<entity_id>` sau inspectează **Settings → Devices**.
-3. **Redenumești o entitate sau toate entitățile device-ului?** Device-urile grupează 2–6 entități. Dacă redenumești entitatea principală dar lași siblings cu schema de denumire veche, creezi inconsistență.
+3. **Redenumești o entitate sau toate entitățile dispozitivului?** Dispozitivele grupează 2–6 entități. Dacă redenumești entitatea principală dar lași siblings cu schema de denumire veche, creezi inconsistență.
 
 ### Pasul 2 — Caută TOȚI consumatorii
 
@@ -66,7 +66,7 @@ Parcurge fiecare locație din checklistul tău din Pasul 2. Actualizează fiecar
 
 ## Redenumire entități
 
-Cerințe adiționale față de workflow-ul universal:
+Cerințe adiționale față de fluxul universal:
 
 ### Descoperire siblings (Pasul 1)
 
@@ -93,7 +93,7 @@ Cardurile din dashboard referențiează entități în mai multe locuri — caut
 
 ### Feature util în HA UI
 
-La redenumirea unui entity ID din UI, HA propune să actualizeze automat referințele în automations/scripts/scenes/groups. **Acceptă opțiunea** — economisește ~90% din muncă. Restul (template-uri, Config-Entry-Groups, Config-Entry-Data, storage dashboards, integrări externe) rămâne de verificat manual.
+La redenumirea unui entity ID din UI, HA propune să actualizeze automat referințele în automations/scripts/scenes/groups. **Acceptă opțiunea** — economisește ~90% din muncă. Restul (șabloane, Config-Entry-Groups, Config-Entry-Data, storage dashboards, integrări externe) rămâne de verificat manual.
 
 ---
 
@@ -221,17 +221,17 @@ Iterează intrările returnate și caută entity ID-ul vechi în câmpurile `dat
 
 ## Storage dashboards (`.storage/lovelace.*`)
 
-**Redenumirile din entity registry NU actualizează dashboardurile Lovelace stocate.**
+**Redenumirile din entity registry NU actualizează panourile Lovelace stocate.**
 
 ### Fix recomandat — fără restart
 
 Folosește Lovelace WebSocket API:
 
 ```
-1. Citește configurația dashboardului:
+1. Citește configurația panoului:
    WS → {"type": "lovelace/config", "url_path": "<path>"}
-   Notă: dashboardul default (Overview) necesită "url_path": null;
-         dashboardurile custom folosesc path-ul lor ca string.
+   Notă: panoul default (Overview) necesită "url_path": null;
+         panourile custom folosesc path-ul lor ca string.
 
 2. Înlocuiește entity IDs — Python JSON-aware (boundary-safe):
    def _replace_ids(obj, old_id, new_id):
@@ -252,7 +252,7 @@ Folosește Lovelace WebSocket API:
 
 ```
 WS → {"type": "lovelace/dashboards/list"}
-→ returnează toate dashboardurile cu url_path-ul lor.
+→ returnează toate panourile cu url_path-ul lor.
 ```
 
 ---

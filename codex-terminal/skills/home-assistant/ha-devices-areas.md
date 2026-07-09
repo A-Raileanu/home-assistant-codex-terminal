@@ -1,24 +1,24 @@
 ---
 name: ha-devices-areas
-description: Entry point rapid pentru device-uri, arii, labels si memoria runtime rename_memory.json in Home Assistant.
+description: Punct de pornire pentru dispozitive, camere, etichete și memoria de redenumire `rename_memory.json` din Home Assistant.
 ---
 
-# Device-uri, Arii si Labels — Entry Point
+# Dispozitive, Arii si Labels — Punct de pornire
 
 Pentru liste canonice, exemple si cazuri speciale, citeste [references/ha-devices-areas.md](references/ha-devices-areas.md). Pentru memoria de redenumiri, citeste [references/rename-memory.md](references/rename-memory.md).
 
-## Fast Path
+## Pași rapizi
 
 1. Device name: `[Camera] Producator Model [#N]`.
 2. `[#N]` se foloseste doar cand exista acelasi model in aceeasi arie.
 3. Area este camera/logica HA; pastreaza slug-urile existente si nu inventa arii fara motiv.
-4. Label-ul descrie tipul/functia device-ului, nu camera. Alege un label existent inainte sa creezi unul nou.
+4. Label-ul descrie tipul/functia dispozitivului, nu camera. Alege un label existent inainte sa creezi unul nou.
 5. Inainte de redenumire, verifica `rename_memory.json`; sari peste intrarile deja canonical sau cu `skip_rename_by_default: true`.
-6. Pentru fiecare entitate a device-ului, aplica formatul din [ha-entities.md](ha-entities.md).
+6. Pentru fiecare entitate a dispozitivului, aplica formatul din [ha-entities.md](ha-entities.md).
 
-## Workflow Device Nou
+## Flux Device Nou
 
-1. Gaseste device-ul in registrul HA sau in `rename_memory.json`.
+1. Gaseste dispozitivul in registrul HA sau in `rename_memory.json`.
 2. Stabileste area, producatorul si modelul oficial.
 3. Verifica daca exista duplicat in aceeasi camera pentru `#N`.
 4. Alege label-ul canonic.

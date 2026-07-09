@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scan Home Assistant config files for entity_id references."""
+"""Caută referințe entity_id în fișierele de configurare Home Assistant."""
 
 from __future__ import annotations
 
@@ -69,15 +69,15 @@ def scan_file(path: Path, needles: list[str]) -> list[dict[str, object]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("entity_id", nargs="+", help="One or more entity_ids to search")
-    parser.add_argument("--root", type=Path, default=Path("/config"), help="Config root to scan")
-    parser.add_argument("--include-storage", action="store_true", default=True, help="Scan .storage files")
-    parser.add_argument("--exclude-storage", action="store_false", dest="include_storage", help="Skip .storage")
-    parser.add_argument("--json", action="store_true", help="Emit JSON")
+    parser.add_argument("entity_id", nargs="+", help="Unul sau mai mulți identificatori entity_id")
+    parser.add_argument("--root", type=Path, default=Path("/config"), help="Directorul de configurare verificat")
+    parser.add_argument("--include-storage", action="store_true", default=True, help="Verifică și fișierele .storage")
+    parser.add_argument("--exclude-storage", action="store_false", dest="include_storage", help="Omite .storage")
+    parser.add_argument("--json", action="store_true", help="Afișează JSON")
     args = parser.parse_args()
 
     if not args.root.exists():
-        raise SystemExit(f"FAIL: root does not exist: {args.root}")
+        raise SystemExit(f"EROARE: directorul nu există: {args.root}")
 
     matches: list[dict[str, object]] = []
     for path in iter_files(args.root, args.include_storage):
@@ -88,7 +88,7 @@ def main() -> int:
         return 0
 
     if not matches:
-        print("No references found.")
+        print("Nu au fost găsite referințe.")
         return 0
 
     for match in matches:

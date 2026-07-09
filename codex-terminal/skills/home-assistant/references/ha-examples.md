@@ -1,6 +1,6 @@
 ---
 name: ha-examples
-description: Exemple YAML HA complete și cheat sheet rapid — 4 exemple de bază + 8 pattern-uri compuse (mișcare, ZHA, yală, parallel, sonerie, rutină, MQTT, scenă cu transition). Citește pentru exemple concrete.
+description: Exemple YAML HA complete și cheat sheet rapid — 4 exemple de bază + 8 modele compuse (mișcare, ZHA, yală, parallel, sonerie, rutină, MQTT, scenă cu transition). Citește pentru exemple concrete.
 ---
 
 # Exemple complete și Cheat Sheet — Home Assistant
@@ -210,7 +210,7 @@ Verb + ce + [unde] + [la ce valoare]
 
 ---
 
-## Exemple pattern-uri (best practices)
+## Exemple modele (recomandări)
 
 Opt exemple compuse care demonstrează multiple bune practici lucrând împreună.
 
@@ -264,7 +264,7 @@ actions:
       entity_id: light.living_ceiling
 ```
 
-### 2. Telecomandă cu mai multe butoane (ZHA device_ieee + trigger IDs + choose)
+### 2. Telecomandă cu mai multe butoane (ZHA device_ieee + identificatori de declanșator + choose)
 
 ```yaml
 alias: "[Dormitor #1] Buton Aqara — Controlează lumina"
@@ -449,7 +449,7 @@ actions:
             importance: high
 ```
 
-### 6. Script rutină noapte bună (fields + sequence + multiple service calls)
+### 6. Script rutină noapte bună (fields + sequence + multiple apeluri de servicii)
 
 ```yaml
 alias: Rutină noapte bună
@@ -511,7 +511,7 @@ Trei metode recomandate pentru entități MQTT, în ordine de preferință:
 **Metoda 1 — MQTT Subentries via UI (recomandat):**
 Settings → Devices & Services → MQTT → Configure → Add Device
 
-**Metoda 2 — MQTT Discovery (pentru device-uri compatibile):**
+**Metoda 2 — MQTT Discovery (pentru dispozitive compatibile):**
 ```yaml
 # Device-ul trimite un mesaj de discovery automat către:
 # homeassistant/<component>/<device_id>/config
@@ -581,14 +581,14 @@ Apelare cu transition diferit:
 
 **TL;DR pentru AI:** când lucrezi în Home Assistant pentru acest utilizator:
 
-#### Device-uri & Entități
+#### Dispozitive & Entități
 
 - **Device name:** `[Cameră] Producător Model [#N]` — Cameră în română, brand/model în scriere oficială. **Fără funcție românească în nume.**
 - **Label (RO):** unul din lista canonică (`ha-devices-areas.md`). NU creezi label-uri noi dacă există deja un sinonim.
 - **Entity name (RO):** funcția în română din vocabularul `ha-entities.md` (`Putere`, `Mișcare`, `Temperatură`). Dacă nu există în vocabular, folosești un termen descriptiv nou în română și îl adaugi în vocabular când devine reutilizabil. Abrevieri tehnice (CO2, TVOC, RSSI) rămân neschimbate.
 - **Entity ID:** `<domain>.<slug_camera>_<function>[_<detail>]` — slug în română, restul în engleză.
 - **Post-redenumire:** (1) dezactivează entitățile nefolosite (`linkquality`, `last_seen`, etc.); (2) verifică automatizările, scripturile, scenele, grupurile, helpers și dashboards pentru referințe vechi (vezi `ha-refactoring.md`).
-- **La final:** rulează `ha-context --force` și verifică `/data/ha-context/rename_memory.json` pentru device-uri, friendly names, labels și entități dezactivate.
+- **La final:** rulează `ha-context --force` și verifică `/data/ha-context/rename_memory.json` pentru dispozitive, friendly names, labels și entități dezactivate.
 - Brand-ul rămâne în device name, NICIODATĂ în entity_id.
 
 #### Automatizări & Scripturi

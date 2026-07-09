@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.0
+
+### Actualizări
+
+- Actualizează Codex CLI la `0.144.1` și serverul `ha-mcp` la `7.12.0`.
+- Treci la baza Home Assistant 3.22 și instalează serverul MCP în imagine, pentru pornire rapidă pe `amd64`, `aarch64` și `armv7`.
+
+### Interfață și performanță
+
+- Elimină animațiile, actualizarea blocantă a datelor și procesele repetate din meniul de pornire.
+- Adaugă conversație nouă, reluarea conversațiilor, un meniu de instrumente, stare clară și afișare adaptată la lățimea terminalului.
+- Optimizează proxy-ul HTTP și WebSocket și evită reînregistrarea MCP când setările nu s-au schimbat.
+
+### Limbă
+
+- Rescrie textele în română simplă și corectează formulările greșite din meniu, cererile prestabilite, comenzi, documentație și skill-urile Home Assistant.
+
 ## 1.2.0
 
 ### Skills

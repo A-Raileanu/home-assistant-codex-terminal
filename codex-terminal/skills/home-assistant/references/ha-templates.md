@@ -1,9 +1,9 @@
 ---
 name: ha-templates
-description: Template-uri Jinja2 HA — când să le folosești vs native conditions/helpers, unique_id/availability/state_class, template-uri bazate pe trigger, accesare sigură (states, float(0), has_value), performanță, pattern-uri.
+description: Șabloane Jinja2 HA — când să le folosești vs native conditions/helpers, unique_id/availability/state_class, șabloane bazate pe trigger, accesare sigură (states, float(0), has_value), performanță, modele.
 ---
 
-# Template-uri Jinja2 — Home Assistant
+# Șabloane Jinja2 — Home Assistant
 
 > Pentru funcții Jinja/YAML dependente de versiunea HA, verifică [ha-version-notes.md](ha-version-notes.md) înainte de schimbări critice.
 
@@ -12,23 +12,23 @@ description: Template-uri Jinja2 HA — când să le folosești vs native condit
 > Settings → Devices & Services → Helpers → Create Helper → Template.
 > Folosește `template:` YAML doar dacă e explicit cerut sau dacă nu ai acces la UI/API.
 >
-> **Despre exemplele din acest fișier:** sunt didactice — arată sintaxa Jinja2 și pattern-uri YAML reutilizabile **și în Template Helper (UI), și în blocuri `template:` YAML**. Logica Jinja2 e identică; doar contextul de configurare diferă. Pentru cod nou de producție, copiază doar template-ul (expresia `state:`, `availability:` etc.) în Template Helper-ul UI.
+> **Despre exemplele din acest fișier:** sunt didactice — arată sintaxa Jinja2 și modele YAML reutilizabile **și în Template Helper (UI), și în blocuri `template:` YAML**. Logica Jinja2 e identică; doar contextul de configurare diferă. Pentru cod nou de producție, copiază doar șablonul (expresia `state:`, `availability:` etc.) în Template Helper-ul UI.
 
-## Workflow — înainte de a implementa un template
+## Flux — înainte de a implementa un template
 
-1. **Evaluează dacă un helper înlocuiește template-ul** — verifică `ha-helpers-scenes.md` pentru alternative native.
+1. **Evaluează dacă un helper înlocuiește șablonul** — verifică `ha-helpers-scenes.md` pentru alternative native.
 2. **Verifică dacă native triggers/conditions sunt potrivite** — consultă `ha-automations.md`.
-3. **Dacă template-ul e necesar:** testează incremental înainte de a modifica configurația de producție.
+3. **Dacă șablonul e necesar:** testează incremental înainte de a modifica configurația de producție.
 4. **Validează YAML** cu `ha-safe-edit check` după modificări.
 5. **Gestionează `unknown` și `unavailable`** — entitățile pot returna aceste stări; adaugă `availability:` și fallback-uri.
 
 ---
 
-## Când sunt potrivite template-urile
+## Când sunt potrivite șabloanele
 
 Templates sunt alegerea CORECTĂ când:
 
-### 1. Date dinamice pentru service calls
+### 1. Date dinamice pentru apeluri de servicii
 
 ```yaml
 actions:
@@ -64,7 +64,7 @@ rest:
         unit_of_measurement: "°C"
 ```
 
-### 4. Accesarea contextului trigger-ului
+### 4. Accesarea contextului declanșatorului
 
 ```yaml
 actions:
@@ -147,7 +147,7 @@ template:
 
 ---
 
-## Când să eviți template-urile
+## Când să eviți șabloanele
 
 NU folosi templates când există o alternativă nativă:
 
@@ -223,9 +223,9 @@ template:
         state: "{{ states('sensor.amps') | float * 230 }}"
 ```
 
-### Template-uri bazate pe trigger — mai eficiente
+### Șabloane bazate pe trigger — mai eficiente
 
-Template-urile bazate pe trigger se actualizează DOAR când triggerul se declanșează:
+Șabloanele bazate pe trigger se actualizează DOAR când triggerul se declanșează:
 
 ```yaml
 template:
@@ -249,7 +249,7 @@ template:
 **Beneficii:**
 - Se evaluează doar la declanșarea triggerului (nu la orice schimbare de stare)
 - Accesezi variabila `trigger`
-- Mai eficient pentru template-uri complexe
+- Mai eficient pentru șabloane complexe
 
 ### Structura blocurilor YAML (HA 2024.10+)
 
@@ -280,7 +280,7 @@ template:
 
 ---
 
-## Template-uri în automatizări — bune practici
+## Șabloane în automatizări — bune practici
 
 ### Folosește sintaxa shorthand
 
@@ -428,7 +428,7 @@ template:
 
 ### Evită operații costisitoare în value templates
 
-Template-urile din `value_template` se actualizează la FIECARE schimbare de stare a sursei.
+Șabloanele din `value_template` se actualizează la FIECARE schimbare de stare a sursei.
 
 ```yaml
 # COSTISITOR - sintaxă modernă, dar logică scumpă la fiecare update relevant
@@ -478,7 +478,7 @@ automation:
 
 ---
 
-## Quick Reference: funcții și filtre
+## Referință rapidă: funcții și filtre
 
 ### Funcții de stare
 
@@ -531,4 +531,4 @@ automation:
 
 ---
 
-**TL;DR:** Folosește Template Helper (UI) în loc de YAML `template:`. `states()` nu dot notation. `| float(0)` nu `| float`. `has_value()` pentru check de disponibilitate. Template-uri bazate pe trigger pentru eficiență. Adaugă `unique_id:` și `availability:` la orice template sensor. Evită template-uri când există native conditions/helpers.
+**TL;DR:** Folosește Template Helper (UI) în loc de YAML `template:`. `states()` nu dot notation. `| float(0)` nu `| float`. `has_value()` pentru check de disponibilitate. Șabloane bazate pe trigger pentru eficiență. Adaugă `unique_id:` și `availability:` la orice template sensor. Evită șabloane când există native conditions/helpers.

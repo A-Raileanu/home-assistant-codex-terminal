@@ -22,7 +22,7 @@ api_call() {
     local body="${3:-}"
 
     if [ -z "$TOKEN" ]; then
-        echo "SUPERVISOR_TOKEN is not set" >&2
+        echo "SUPERVISOR_TOKEN nu este setat" >&2
         return 1
     fi
 
@@ -45,7 +45,7 @@ check_config() {
 }
 
 show_safety() {
-    echo "Safety options:"
+    echo "Opțiuni de siguranță:"
     echo "- readonly_mode: $(option readonly_mode false)"
     echo "- require_backup_before_edit: $(option require_backup_before_edit true)"
     echo "- enable_device_control: $(option enable_device_control false)"
@@ -63,42 +63,42 @@ show_context_json() {
     local context_dir="${CONTEXT_JSON_DIR:-/data/ha-context}"
 
     if [ ! -d "$context_dir" ]; then
-        echo "Structured context not found at ${context_dir}"
-        echo "Run: ha-context --force"
+        echo "Datele structurate nu există în ${context_dir}"
+        echo "Rulează: ha-context --force"
         exit 1
     fi
 
-    echo "Structured context: ${context_dir}"
+    echo "Date structurate: ${context_dir}"
     find "$context_dir" -maxdepth 1 -type f -name "*.json" -print | sort
 }
 
 doctor() {
     local failed=0
 
-    echo "Codex Terminal doctor"
+    echo "Diagnostic Codex Terminal"
     echo ""
 
     for bin in codex curl jq python3 yq tmux ttyd uvx bwrap websocat; do
         if command -v "$bin" >/dev/null 2>&1; then
             echo "OK: $bin"
         else
-            echo "FAIL: missing $bin"
+            echo "EROARE: lipsește $bin"
             failed=1
         fi
     done
 
     echo ""
     if [ -n "$TOKEN" ]; then
-        echo "OK: Supervisor token is present"
+        echo "OK: tokenul Supervisor este disponibil"
         if api_call GET "core/info" >/tmp/codex-ha-core-info.json 2>/dev/null; then
-            echo "OK: Home Assistant Core API reachable"
-            jq -r '"Core version: " + (.data.version // "unknown")' /tmp/codex-ha-core-info.json 2>/dev/null || true
+            echo "OK: API-ul Home Assistant Core răspunde"
+            jq -r '"Versiune Core: " + (.data.version // "necunoscută")' /tmp/codex-ha-core-info.json 2>/dev/null || true
         else
-            echo "FAIL: Home Assistant Core API not reachable"
+            echo "EROARE: API-ul Home Assistant Core nu răspunde"
             failed=1
         fi
     else
-        echo "FAIL: Supervisor token is missing"
+        echo "EROARE: lipsește tokenul Supervisor"
         failed=1
     fi
 
@@ -106,34 +106,48 @@ doctor() {
     if [ -x /opt/scripts/validate-skills.sh ]; then
         /opt/scripts/validate-skills.sh || failed=1
     else
-        echo "FAIL: validate-skills script missing"
+        echo "EROARE: lipsește scriptul validate-skills"
         failed=1
     fi
 
     echo ""
     if codex mcp list >/tmp/codex-ha-mcp.txt 2>/dev/null; then
-        echo "OK: Codex MCP list works"
+        echo "OK: lista conexiunilor MCP este disponibilă"
         cat /tmp/codex-ha-mcp.txt
     else
-        echo "WARN: Codex MCP list failed"
+        echo "AVERTISMENT: lista conexiunilor MCP nu a putut fi citită"
+    fi
+
+    if [ -x /opt/ha-mcp/bin/python ]; then
+        local bundled_version
+        bundled_version="$(/opt/ha-mcp/bin/python -c 'import importlib.metadata; print(importlib.metadata.version("ha-mcp"))' 2>/dev/null || true)"
+        if [ -n "$bundled_version" ]; then
+            echo "OK: ha-mcp ${bundled_version} este instalat în imagine"
+        else
+            echo "EROARE: mediul ha-mcp nu poate fi citit"
+            failed=1
+        fi
+    else
+        echo "EROARE: mediul ha-mcp instalat în imagine lipsește"
+        failed=1
     fi
 
     echo ""
     show_safety
 
     if [ "$(option codex_full_permissions true)" = "true" ]; then
-        echo "WARN: codex_full_permissions is enabled; Codex runs without approvals/sandbox"
+        echo "AVERTISMENT: codex_full_permissions este activ; Codex rulează fără confirmări și izolare"
     fi
 
     if [ "$(option readonly_mode false)" = "true" ] && [ "$(option enable_ha_mcp true)" = "true" ] && [ "$(option mcp_mode ha-mcp)" != "disabled" ]; then
-        echo "INFO: MCP registration is skipped while readonly_mode is true"
+        echo "INFORMAȚIE: MCP nu este înregistrat cât timp readonly_mode este activ"
     fi
 
     echo ""
     if [ "$failed" -eq 0 ]; then
-        echo "Doctor passed"
+        echo "Diagnosticul nu a găsit probleme"
     else
-        echo "Doctor found issues"
+        echo "Diagnosticul a găsit probleme"
     fi
     exit "$failed"
 }
@@ -144,7 +158,7 @@ show_logs() {
     lines="$(option max_log_lines 80)"
 
     if [ -z "$slug" ]; then
-        echo "Usage: codex-ha logs <addon_slug>" >&2
+        echo "Utilizare: codex-ha logs <slug_aplicație>" >&2
         exit 1
     fi
 
@@ -153,17 +167,17 @@ show_logs() {
 
 usage() {
     cat <<'USAGE'
-Usage: codex-ha <command>
+Utilizare: codex-ha <comandă>
 
-Commands:
-  doctor        Check Codex, HA API, MCP, skills, and safety options
-  context       Regenerate Home Assistant context (pass --force to bypass cache)
-  context-json  List structured JSON context files
-  check-config  Run Home Assistant configuration check
-  mcp           List Codex MCP servers
-  safety        Print safety options
-  plans         List staged ha-safe-edit plans
-  logs SLUG     Print add-on logs for SLUG
+Comenzi:
+  doctor        Verifică Codex, API-ul HA, MCP, skill-urile și siguranța
+  context       Actualizează datele Home Assistant; --force ignoră memoria temporară
+  context-json  Listează fișierele JSON generate
+  check-config  Verifică configurația Home Assistant
+  mcp           Listează serverele MCP cunoscute de Codex
+  safety        Arată opțiunile de siguranță
+  plans         Listează planurile ha-safe-edit pregătite
+  logs SLUG     Arată jurnalul aplicației cu acest SLUG
 USAGE
 }
 
@@ -180,5 +194,5 @@ case "$command" in
     plans) ha-safe-edit list-plans ;;
     logs) show_logs "$@" ;;
     help|--help|-h) usage ;;
-    *) echo "Unknown command: $command" >&2; usage; exit 1 ;;
+    *) echo "Comandă necunoscută: $command" >&2; usage; exit 1 ;;
 esac

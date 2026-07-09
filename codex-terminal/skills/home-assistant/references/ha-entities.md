@@ -9,7 +9,7 @@ description: Vocabular entity names HA (120+ termeni RO, 13 categorii), device_c
 
 ### ⛔ Regulă obligatorie: prefix `[Area] Nume dispozitiv -` în friendly_name
 
-**Fiecare entitate** (sensor, binary_sensor, switch, light, sub-funcție, statistic, diagnostic — fără excepție) trebuie să aibă `friendly_name` explicit setat în formatul de mai jos. Nu te baza pe `has_entity_name: True` pentru auto-concatenare — multe view-uri din HA (statistici, notificări, dropdown-uri, log filters, logbook, energy dashboard, voice assistants) afișează **doar `friendly_name`-ul entității**, fără device-ul de care aparține. Fără prefix obții liste imposibil de citit (`Procent CPU`, `Procent CPU`, `Procent CPU`, …).
+**Fiecare entitate** (sensor, binary_sensor, switch, light, sub-funcție, statistic, diagnostic — fără excepție) trebuie să aibă `friendly_name` explicit setat în formatul de mai jos. Nu te baza pe `has_entity_name: True` pentru auto-concatenare — multe pagini din HA (statistici, notificări, dropdown-uri, log filters, logbook, energy dashboard, voice assistants) afișează **doar `friendly_name`-ul entității**, fără dispozitivul de care aparține. Fără prefix obții liste imposibil de citit (`Procent CPU`, `Procent CPU`, `Procent CPU`, …).
 
 ### Format canonic
 
@@ -43,7 +43,7 @@ Reguli stricte:
            state: "{{ states('sensor.shelly_pro_3em_a_power') | float + ... }}"
    ```
 
-`has_entity_name: True` poate rămâne setat pe device-ul integrat, dar **override-ul de `friendly_name` are întâietate** la afișare — deci nu vei vedea dublare.
+`has_entity_name: True` poate rămâne setat pe dispozitivul integrat, dar **override-ul de `friendly_name` are întâietate** la afișare — deci nu vei vedea dublare.
 
 ### Vocabular standard (doar partea `<Funcție>`)
 
@@ -383,7 +383,7 @@ Fiecare tabel conține trei coloane:
 - **Dacă funcția nu există în niciun tabel**, folosești un termen descriptiv nou în română. Dacă apare repetat, adaugă-l în vocabularul standard din acest fișier.
 - **Abrevieri tehnice** (CO2, TVOC, PM2.5, RSSI, pH, SSID) se păstrează neschimbate — sunt termeni universali.
 - **Pentru relee/canale numerotate fără funcție clară:** `Canal 1`, `Canal 2`. Dacă funcția e clară, folosește-o direct (`Lumină tavan`, `Bandă LED TV`).
-- **Pentru entitatea "principală" a device-ului** (un singur switch/light/sensor), `friendly_name = [Area] Nume dispozitiv` (fără ` - <Funcție>`).
+- **Pentru entitatea "principală" a dispozitivului** (un singur switch/light/sensor), `friendly_name = [Area] Nume dispozitiv` (fără ` - <Funcție>`).
 - **Nu pune unități de măsură** în nume (`W`, `°C`, `lux`) — sunt deja la state.
 - **Nu repeta domeniul** în funcție (`light.living_ceiling` cu device `[Living] IKEA TRÅDFRI E27` → friendly_name `[Living] IKEA TRÅDFRI E27`, fără `- Lumină`).
 - **Verifică listele "fără context"** după redenumire: deschide Developer Tools → Statistics și Settings → Devices → orice device atins; toate entitățile trebuie să apară cu prefix complet.
@@ -440,7 +440,7 @@ camera.curte_garage
 
 ### Excepție permisă
 
-Dacă într-o cameră ai **mai multe device-uri cu aceeași funcție** (ex: 3 prize monitorizate în Living), adaugă disambiguator descriptiv în engleză — NU brandul:
+Dacă într-o cameră ai **mai multe dispozitive cu aceeași funcție** (ex: 3 prize monitorizate în Living), adaugă disambiguator descriptiv în engleză — NU brandul:
 
 ```
 sensor.living_tv_socket_power
@@ -453,7 +453,7 @@ sensor.living_aquarium_socket_power
 - Doar `[a-z0-9_]`. Fără diacritice, fără cratime, fără spații.
 - Începe cu `<slug_camera>` (vezi tabelul din Areas).
 - Nu repeta domeniul în slug (`light.living_lamp_x` → `light.living_x` dacă e clar).
-- Nu schimba entity_id-uri existente fără să verifici automatizările/dashboard-urile — folosește **friendly name** pentru cosmetică, **entity_id** doar când chiar trebuie (vezi `ha-refactoring.md`).
+- Nu schimba entity_id-uri existente fără să verifici automatizările/panourile — folosește **friendly name** pentru cosmetică, **entity_id** doar când chiar trebuie (vezi `ha-refactoring.md`).
 
 ---
 
@@ -514,7 +514,7 @@ grep -rn "sensor.shellypro3em_84cca8b5xxxx_a_act_power" /config/
 git grep "sensor.vechi_id"
 ```
 
-**Feature util în HA UI:** la redenumirea unui entity_id, HA propune să actualizeze automat referințele în automations/scripts/scenes/groups. **Acceptă opțiunea** — economisește 90% din muncă. Restul (template-uri, integrări externe) rămân de verificat manual.
+**Feature util în HA UI:** la redenumirea unui entity_id, HA propune să actualizeze automat referințele în automations/scripts/scenes/groups. **Acceptă opțiunea** — economisește 90% din muncă. Restul (șabloane, integrări externe) rămân de verificat manual.
 
 ---
 

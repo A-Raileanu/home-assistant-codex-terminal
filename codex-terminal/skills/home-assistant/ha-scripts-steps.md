@@ -1,13 +1,13 @@
 ---
 name: ha-scripts-steps
-description: Entry point rapid pentru scripturi Home Assistant: alias, fields, sequence, variables, choose, repeat si pasi cu alias.
+description: Punct de pornire pentru scripturi Home Assistant: nume, câmpuri, secvențe, variabile, alegeri, repetări și pași ușor de citit.
 ---
 
-# Scripturi — Entry Point
+# Scripturi — Punct de pornire
 
 Pentru detalii si exemple, citeste [references/ha-scripts-steps.md](references/ha-scripts-steps.md).
 
-## Fast Path
+## Pași rapizi
 
 1. Alias in romana si scop clar.
 2. Defineste `fields:` pentru parametri expusi UI/automatizari.
@@ -21,9 +21,9 @@ Pentru detalii si exemple, citeste [references/ha-scripts-steps.md](references/h
 
 | Ai nevoie de | Sectiune |
 |---|---|
-| `fields:` si selectori | [references/ha-scripts-steps.md](references/ha-scripts-steps.md#campul-fields-parametri) |
-| `sequence` si alias pe pasi | [references/ha-scripts-steps.md](references/ha-scripts-steps.md#pasi-steps--sequence) |
-| Variabile | [references/ha-scripts-steps.md](references/ha-scripts-steps.md#variabile-reutilizabile--variables) |
+| `fields:` si selectori | [references/ha-scripts-steps.md](references/ha-scripts-steps.md#câmpul-fields-parametri) |
+| `sequence` si alias pe pasi | [references/ha-scripts-steps.md](references/ha-scripts-steps.md#pași-steps-sequence) |
+| Variabile | [references/ha-scripts-steps.md](references/ha-scripts-steps.md#variabile-reutilizabile-variables) |
 | Exemple complete | [references/ha-scripts-steps.md](references/ha-scripts-steps.md) |
 
 ## TL;DR

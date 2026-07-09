@@ -17,9 +17,9 @@ def load_memory(path: Path) -> dict[str, Any]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        raise SystemExit(f"FAIL: rename memory not found: {path}")
+        raise SystemExit(f"EROARE: memoria de redenumire nu există: {path}")
     except json.JSONDecodeError as exc:
-        raise SystemExit(f"FAIL: invalid JSON in {path}: {exc}")
+        raise SystemExit(f"EROARE: JSON incorect în {path}: {exc}")
 
 
 def searchable_text(item: dict[str, Any]) -> str:
@@ -101,7 +101,7 @@ def emit_summary(memory: dict[str, Any], items: dict[str, list[dict[str, Any]]],
     if as_json:
         print(json.dumps(summary, ensure_ascii=False, indent=2))
         return
-    print("Rename memory summary")
+    print("Rezumatul memoriei de redenumire")
     for key in sorted(summary):
         print(f"- {key}: {summary[key]}")
 
@@ -118,8 +118,8 @@ def emit_table(items: dict[str, list[dict[str, Any]]], as_json: bool, limit: int
         return
 
     if items["devices"]:
-        print("Devices")
-        print("name | area | manufacturer | model | labels")
+        print("Dispozitive")
+        print("nume | cameră | producător | model | etichete")
         print("--- | --- | --- | --- | ---")
         for item in items["devices"][:limit]:
             labels = ", ".join(item.get("labels") or [])
@@ -131,8 +131,8 @@ def emit_table(items: dict[str, list[dict[str, Any]]], as_json: bool, limit: int
     if items["entities"]:
         if items["devices"]:
             print()
-        print("Entities")
-        print("entity_id | friendly_name | area | disabled_by")
+        print("Entități")
+        print("entity_id | friendly_name | cameră | disabled_by")
         print("--- | --- | --- | ---")
         for item in items["entities"][:limit]:
             print(
@@ -141,18 +141,18 @@ def emit_table(items: dict[str, list[dict[str, Any]]], as_json: bool, limit: int
             )
 
     if not items["devices"] and not items["entities"]:
-        print("No matching devices/entities.")
+        print("Nu există dispozitive sau entități potrivite.")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--memory", type=Path, default=DEFAULT_MEMORY, help="Path to rename_memory.json")
+    parser.add_argument("--memory", type=Path, default=DEFAULT_MEMORY, help="Calea către rename_memory.json")
     parser.add_argument("--kind", choices=("all", "devices", "entities"), default="all")
-    parser.add_argument("--query", help="Filter by name, entity_id, area, label, manufacturer or model")
-    parser.add_argument("--summary", action="store_true", help="Print summary counts")
-    parser.add_argument("--pending", action="store_true", help="Show only entries that should be reviewed")
-    parser.add_argument("--json", action="store_true", help="Emit JSON")
-    parser.add_argument("--limit", type=int, default=80, help="Maximum rows per table")
+    parser.add_argument("--query", help="Filtrează după nume, entity_id, cameră, etichetă, producător sau model")
+    parser.add_argument("--summary", action="store_true", help="Arată numărul elementelor")
+    parser.add_argument("--pending", action="store_true", help="Arată numai elementele care trebuie verificate")
+    parser.add_argument("--json", action="store_true", help="Afișează JSON")
+    parser.add_argument("--limit", type=int, default=80, help="Numărul maxim de rânduri din fiecare tabel")
     args = parser.parse_args()
 
     memory = load_memory(args.memory)

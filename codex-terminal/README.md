@@ -1,41 +1,37 @@
 # Codex Terminal
 
-Terminal interface for OpenAI Codex CLI in Home Assistant.
+Interfață în terminal pentru OpenAI Codex CLI, integrată în Home Assistant.
 
-## Features
+## Funcții
 
-- Sidebar access through Home Assistant ingress.
-- Full browser terminal through Home Assistant ingress, without an intermediate dashboard.
-- Persistent Codex auth and config in `/data/.codex`.
-- Starts in `/config` for Home Assistant configuration work.
-- `tmux` session persistence across sidebar reconnects.
-- Generated Home Assistant context in Markdown and structured JSON, refreshed on terminal open when stale.
-- Optional Home Assistant MCP server registration.
-- Bundled compact HA skills with on-demand references, rename-memory audit helpers, automation, dashboard, template, refactor, add-on, and troubleshooting guidance.
-- `codex-ha doctor` diagnostics and `ha-safe-edit plan/apply` staged config workflow.
+- Acces din bara laterală prin Home Assistant ingress.
+- Terminal complet în browser, fără pagini intermediare.
+- Autentificare și configurare Codex păstrate în `/data/.codex`.
+- Pornire în `/config`, pregătită pentru fișierele Home Assistant.
+- Conversații păstrate cu `tmux` când închizi bara laterală.
+- Date Home Assistant generate în Markdown și JSON structurat.
+- Integrare opțională cu serverul MCP pentru Home Assistant.
+- Skill-uri compacte pentru automatizări, panouri, șabloane, redenumiri și depanare.
+- Diagnostic cu `codex-ha doctor` și editare sigură cu `ha-safe-edit plan/apply`.
 
-## Usage
+## Utilizare
 
-Open **Codex Terminal** from the sidebar and run:
+Deschide **Codex Terminal** din bara laterală. Meniul permite să începi o conversație, să reiei una salvată sau să alegi o acțiune Home Assistant.
+
+La prima folosire, autentifică-te:
 
 ```bash
 codex login
-codex --cd /config
 ```
 
-Refresh Home Assistant context with:
+Comenzi utile:
 
 ```bash
 ha-context
 ha-context --force
 codex-ha doctor
 ha-safe-edit check
-ha-safe-edit plan /config/automations.yaml -- sh -c 'your-edit-command'
+ha-safe-edit plan /config/automations.yaml -- sh -c 'comanda-de-editare'
 ha-safe-edit apply <plan_id>
-```
-
-List MCP servers with:
-
-```bash
 codex mcp list
 ```

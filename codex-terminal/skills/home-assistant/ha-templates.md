@@ -1,13 +1,13 @@
 ---
 name: ha-templates
-description: Entry point rapid pentru template-uri Home Assistant: Jinja2, template sensors, trigger-based templates, performanta si alternative native.
+description: Punct de pornire pentru șabloane Home Assistant: Jinja2, senzori bazați pe șabloane, declanșatoare, performanță și alternative native.
 ---
 
-# Template-uri — Entry Point
+# Șabloane — Punct de pornire
 
 Pentru exemple si detalii Jinja2, citeste [references/ha-templates.md](references/ha-templates.md).
 
-## Fast Path
+## Pași rapizi
 
 1. Intreaba intai daca un helper sau o conditie nativa rezolva problema.
 2. Foloseste template doar pentru logica derivata reala, agregari sau formatari care nu au alternativa nativa.
@@ -21,10 +21,10 @@ Pentru exemple si detalii Jinja2, citeste [references/ha-templates.md](reference
 
 | Ai nevoie de | Sectiune |
 |---|---|
-| Cand eviti template-uri | [references/ha-templates.md](references/ha-templates.md#cand-sa-eviti-template-urile) |
+| Cand eviti șabloane | [references/ha-templates.md](references/ha-templates.md#când-să-eviți-șabloanele) |
 | Jinja2 si exemple | [references/ha-templates.md](references/ha-templates.md) |
-| Performanta | [references/ha-templates.md](references/ha-templates.md#performanta-template-uri) |
-| Trigger-based templates | [references/ha-templates.md](references/ha-templates.md#trigger-based-template-sensors) |
+| Performanta | [references/ha-templates.md](references/ha-templates.md#considerații-de-performanță) |
+| Trigger-based templates | [references/ha-templates.md](references/ha-templates.md#folosește-trigger-based-templates-pentru-logică-complexă) |
 
 ## TL;DR
 

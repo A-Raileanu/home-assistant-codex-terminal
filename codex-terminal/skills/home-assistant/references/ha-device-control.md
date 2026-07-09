@@ -1,9 +1,9 @@
 ---
 name: ha-device-control
-description: Service calls HA — `target:`/`data:`, entity_id vs device_id, ZHA/Z2M buttons, pattern-uri lumini/climate/cover/media/vacuum, response_variable, troubleshooting, add-on dev.
+description: Apeluri de servicii HA — `target:`/`data:`, entity_id vs device_id, ZHA/Z2M buttons, modele lumini/climate/cover/media/vacuum, response_variable, depanare, add-on dev.
 ---
 
-# Controlul Device-urilor — Home Assistant
+# Controlul Dispozitivelor — Home Assistant
 
 > Pentru servicii sau comportamente dependente de versiunea HA, verifică [ha-version-notes.md](ha-version-notes.md) înainte de schimbări critice.
 
@@ -13,12 +13,12 @@ description: Service calls HA — `target:`/`data:`, entity_id vs device_id, ZHA
 
 `device_id` este un identificator intern HA care **se schimbă când un device este re-adăugat** (ex: după Zigbee mesh repair, re-setup de integrare, sau înlocuire hardware). Automatizările care folosesc `device_id` se vor strica în tăcere.
 
-`entity_id` este controlabil de utilizator, stabil la re-adăugarea device-ului, și poate fi redenumit pentru claritate.
+`entity_id` este controlabil de utilizator, stabil la re-adăugarea dispozitivului, și poate fi redenumit pentru claritate.
 
-### Trigger-uri device vs trigger-uri state
+### Trigger-uri device vs declanșatoare state
 
 ```yaml
-# GREȘIT - device_id se schimbă dacă device-ul este re-adăugat
+# GREȘIT - device_id se schimbă dacă dispozitivul este re-adăugat
 triggers:
   - trigger: device
     device_id: abc123def456
@@ -34,13 +34,13 @@ triggers:
 
 ### Când device_id este acceptabil
 
-1. **Device-only triggers** — Unele device-uri expun triggers fără entități (ex: Zigbee buttons — vezi secțiunea Zigbee)
+1. **Device-only triggers** — Unele dispozitive expun triggers fără entități (ex: Zigbee buttons — vezi secțiunea Zigbee)
 2. **Automatizări temporare** — Quick tests pe care le vei șterge
 3. **Z2M autodiscovery** — Zigbee2MQTT gestionează mapping-ul device-to-trigger
 
 ---
 
-## Service calls — bune practici
+## Apeluri de servicii — bune practici
 
 ### Folosește structura `target:`
 
@@ -103,11 +103,11 @@ target:
 
 ---
 
-## Pattern-uri pentru butoane/remote-uri Zigbee
+## Modele pentru butoane și telecomenzi Zigbee
 
 ### ZHA (Zigbee Home Automation)
 
-ZHA buttons fire `zha_event` events. Folosește **event triggers** cu `device_ieee` (adresa IEEE a device-ului), care este **persistentă** la re-adăugare.
+ZHA buttons fire `zha_event` events. Folosește **event triggers** cu `device_ieee` (adresa IEEE a dispozitivului), care este **persistentă** la re-adăugare.
 
 ```yaml
 # Trigger buton ZHA — device_ieee este persistent
@@ -157,7 +157,7 @@ triggers:
 
 ---
 
-## Pattern-uri specifice pe domeniu
+## Modele specifice pe domeniu
 
 ### Lumini
 
@@ -360,10 +360,10 @@ actions:
       brightness: 255
 ```
 
-### Hardcoding device_id pentru device-uri obișnuite
+### Valori scrise direct device_id pentru dispozitive obișnuite
 
 ```yaml
-# GREȘIT - se strică la re-adăugarea device-ului
+# GREȘIT - se strică la re-adăugarea dispozitivului
 actions:
   - action: light.turn_on
     target:
@@ -397,7 +397,7 @@ actions:
 
 ---
 
-## Quick Reference: structura unui service call
+## Referință rapidă: structura unui service call
 
 ```yaml
 actions:
@@ -411,7 +411,7 @@ actions:
     response_variable: result     # Capturează răspunsul (dacă e necesar)
 ```
 
-## Quick Reference: tipuri de trigger pentru device-uri
+## Referință rapidă: tipuri de trigger pentru dispozitive
 
 | Tip device | ZHA | Zigbee2MQTT | Generic |
 |-------------|-----|-------------|---------|
@@ -425,9 +425,9 @@ Preferă întotdeauna `state` triggers cu `entity_id` pentru senzori și switch-
 
 ---
 
-## Diagnosticare și Troubleshooting
+## Diagnosticare și Depanare
 
-### Workflow de diagnostic
+### Flux de diagnostic
 
 1. Rulează `codex-ha doctor` pentru a obține o vedere de ansamblu.
 2. Actualizează contextul cu `ha-context`.
@@ -487,4 +487,4 @@ https://raw.githubusercontent.com/home-assistant/home-assistant.io/refs/heads/cu
 
 ---
 
-**TL;DR:** Folosește `entity_id` nu `device_id`. `target:` + `data:` pentru service calls. ZHA buttons → `event` trigger cu `device_ieee`. Z2M → `device` sau `mqtt` trigger. `color_temp_kelvin` nu `color_temp`. `vacuum.clean_area` cu `area_id` pentru roboți. `response_variable` pentru capturarea datelor returnate.
+**TL;DR:** Folosește `entity_id` nu `device_id`. `target:` + `data:` pentru apeluri de servicii. ZHA buttons → `event` trigger cu `device_ieee`. Z2M → `device` sau `mqtt` trigger. `color_temp_kelvin` nu `color_temp`. `vacuum.clean_area` cu `area_id` pentru roboți. `response_variable` pentru capturarea datelor returnate.

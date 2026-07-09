@@ -183,7 +183,7 @@ Verb + ce + [unde] + [la ce valoare / condiție]
 ```
 
 - **Verb la imperativ** — același verb pe care l-ai folosi dacă i-ai da o instrucțiune unui om.
-- **Ce** — device-ul sau entitatea, în română, fără entity_id.
+- **Ce** — dispozitivul sau entitatea, în română, fără entity_id.
 - **Unde** — camera, dacă ajută la claritate.
 - **Valoare / condiție** — parametrul relevant (`la 30%`, `la 21°C`, `dacă e seară`).
 

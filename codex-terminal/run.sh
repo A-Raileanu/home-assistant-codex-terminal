@@ -12,7 +12,7 @@ init_environment() {
     local data_dir="/data/.local/share"
     local codex_home="/data/.codex"
 
-    bashio::log.info "Initializing Codex environment in /data..."
+    bashio::log.info "Pregătesc mediul Codex în /data..."
 
     mkdir -p \
         "$data_home" \
@@ -46,13 +46,14 @@ init_environment() {
     export HA_CONTEXT_REFRESH_MINUTES="$(bashio::config "ha_context_refresh_minutes" "30")"
     export CONTEXT_DETAIL_LEVEL="$(bashio::config "context_detail_level" "standard")"
     export INCLUDE_ADDON_LOGS="$(bashio::config "include_addon_logs" "false")"
-    export HA_MCP_VERSION="$(bashio::config "ha_mcp_version" "3.5.1")"
+    export HA_MCP_VERSION="$(bashio::config "ha_mcp_version" "7.12.0")"
+    export CODEX_HA_MCP_MODE="$(bashio::config "mcp_mode" "ha-mcp")"
     export SAFE_EDIT_BACKUP_RETENTION_DAYS="$(bashio::config "safe_edit_backup_retention_days" "30")"
 
     migrate_legacy_codex_files "$codex_home"
     install_tmux_config
 
-    bashio::log.info "Environment initialized:"
+    bashio::log.info "Mediul este pregătit:"
     bashio::log.info "  HOME=${HOME}"
     bashio::log.info "  CODEX_HOME=${CODEX_HOME}"
     bashio::log.info "  XDG_CONFIG_HOME=${XDG_CONFIG_HOME}"
@@ -67,8 +68,8 @@ migrate_legacy_codex_files() {
 
     for legacy_path in "${legacy_locations[@]}"; do
         if [ -d "$legacy_path" ] && [ "$(ls -A "$legacy_path" 2>/dev/null)" ]; then
-            bashio::log.info "Migrating Codex files from ${legacy_path}"
-            cp -a "$legacy_path"/. "$target_dir"/ 2>/dev/null || bashio::log.warning "Migration failed from ${legacy_path}"
+            bashio::log.info "Mut fișierele Codex din ${legacy_path}"
+            cp -a "$legacy_path"/. "$target_dir"/ 2>/dev/null || bashio::log.warning "Fișierele din ${legacy_path} nu au putut fi mutate"
         fi
     done
 
@@ -91,7 +92,7 @@ configure_codex_cli_defaults() {
     if [ ! -f "$config_file" ]; then
         printf 'suppress_unstable_features_warning = true\n' > "$config_file"
         chmod 600 "$config_file"
-        bashio::log.info "Created Codex config with quiet defaults"
+        bashio::log.info "Am creat configurația Codex cu mesaje reduse"
         return 0
     fi
 
@@ -118,8 +119,11 @@ PY
 
 remove_codex_mcp_server() {
     local server_name="$1"
+    local config_file="${CODEX_HOME}/config.toml"
 
-    if command -v codex >/dev/null 2>&1; then
+    if command -v codex >/dev/null 2>&1 \
+        && [ -f "$config_file" ] \
+        && grep -Fq "[mcp_servers.${server_name}]" "$config_file"; then
         codex mcp remove "$server_name" >/dev/null 2>&1 || true
     fi
 }
@@ -150,7 +154,7 @@ cleanup_unavailable_mcp_servers() {
 }
 
 prepare_codex_cli() {
-    bashio::log.info "Preparing Codex CLI configuration..."
+    bashio::log.info "Pregătesc configurația Codex CLI..."
     configure_codex_cli_defaults
     cleanup_unavailable_mcp_servers
 }
@@ -177,7 +181,7 @@ install_bundled_skills() {
     local skills_dir version_file addon_version existing_version skill_path skill_name
 
     if [ ! -d /opt/skills ]; then
-        bashio::log.info "No bundled Codex skills found"
+        bashio::log.info "Nu există skill-uri Codex incluse"
         return 0
     fi
 
@@ -189,11 +193,11 @@ install_bundled_skills() {
     mkdir -p "$skills_dir"
 
     if [ "$existing_version" = "$addon_version" ]; then
-        bashio::log.info "Bundled skills already synced for add-on version ${addon_version}"
+        bashio::log.info "Skill-urile sunt deja actualizate pentru versiunea ${addon_version}"
         return 0
     fi
 
-    bashio::log.info "Resetting Codex skills directory to match bundle for ${addon_version}..."
+    bashio::log.info "Actualizez skill-urile Codex pentru versiunea ${addon_version}..."
     rm -rf "$skills_dir"
     mkdir -p "$skills_dir"
 
@@ -201,14 +205,14 @@ install_bundled_skills() {
         [ -e "$skill_path" ] || continue
         skill_name="$(basename "$skill_path")"
         cp -a "$skill_path" "${skills_dir}/${skill_name}"
-        bashio::log.info "Installed bundled skill: ${skill_name}"
+        bashio::log.info "Skill instalat: ${skill_name}"
     done
 
     echo "$addon_version" > "$version_file"
 }
 
 install_persistent_packages() {
-    bashio::log.info "Checking persistent packages..."
+    bashio::log.info "Verific pachetele persistente..."
 
     local persist_config="/data/persistent-packages.json"
     local apk_packages=""
@@ -234,24 +238,24 @@ install_persistent_packages() {
     pip_packages="$(echo "$pip_packages" | tr ' ' '\n' | sed '/^$/d;/^null$/d' | sort -u | tr '\n' ' ' | xargs || true)"
 
     if [ -n "$apk_packages" ]; then
-        bashio::log.info "Installing persistent APK packages: ${apk_packages}"
+        bashio::log.info "Instalez pachetele APK persistente: ${apk_packages}"
         # shellcheck disable=SC2086
-        apk add --no-cache $apk_packages || bashio::log.warning "Some APK packages failed to install"
+        apk add --no-cache $apk_packages || bashio::log.warning "Unele pachete APK nu au putut fi instalate"
     fi
 
     if [ -n "$pip_packages" ]; then
-        bashio::log.info "Installing persistent pip packages: ${pip_packages}"
+        bashio::log.info "Instalez pachetele pip persistente: ${pip_packages}"
         # shellcheck disable=SC2086
-        pip3 install --break-system-packages --no-cache-dir $pip_packages || bashio::log.warning "Some pip packages failed to install"
+        pip3 install --break-system-packages --no-cache-dir $pip_packages || bashio::log.warning "Unele pachete pip nu au putut fi instalate"
     fi
 }
 
 validate_codex_skills() {
     if [ -x /opt/scripts/validate-skills.sh ]; then
-        bashio::log.info "Validating Codex skills..."
+        bashio::log.info "Verific skill-urile Codex..."
         /opt/scripts/validate-skills.sh "${CODEX_HOME}/skills" 2>&1 | while IFS= read -r line; do
             bashio::log.info "$line"
-        done || bashio::log.warning "One or more Codex skills failed validation"
+        done || bashio::log.warning "Unul sau mai multe skill-uri nu au trecut verificarea"
     fi
 }
 
@@ -262,15 +266,15 @@ generate_ha_context() {
     refresh_minutes="$(bashio::config "ha_context_refresh_minutes" "30")"
 
     if [ "$ha_smart_context" != "true" ]; then
-        bashio::log.info "HA smart context disabled"
+        bashio::log.info "Generarea automată a datelor Home Assistant este dezactivată"
         return 0
     fi
 
     if command -v ha-context >/dev/null 2>&1; then
-        bashio::log.info "Refreshing Home Assistant context when older than ${refresh_minutes} minutes..."
+        bashio::log.info "Actualizez datele Home Assistant dacă sunt mai vechi de ${refresh_minutes} minute..."
         ha-context --refresh-minutes "$refresh_minutes" 2>&1 | while IFS= read -r line; do
             bashio::log.info "$line"
-        done || bashio::log.warning "HA context generation failed, continuing"
+        done || bashio::log.warning "Datele Home Assistant nu au putut fi generate; pornirea continuă"
     fi
 }
 
@@ -292,7 +296,7 @@ start_context_refresh_loop() {
     [ "$interval_seconds" -gt 300 ] && interval_seconds=300
     [ "$interval_seconds" -lt 60 ] && interval_seconds=60
 
-    bashio::log.info "Starting Home Assistant context refresh loop (check every ${interval_seconds}s, refresh window ${refresh_minutes}m)"
+    bashio::log.info "Pornesc actualizarea periodică a datelor Home Assistant (verificare la ${interval_seconds}s, interval ${refresh_minutes}m)"
 
     (
         while true; do
@@ -306,10 +310,10 @@ start_context_refresh_loop() {
 
 setup_ha_mcp() {
     if [ -f /opt/scripts/setup-ha-mcp.sh ]; then
-        bashio::log.info "Configuring Home Assistant MCP integration..."
+        bashio::log.info "Configurez integrarea MCP Home Assistant..."
         # shellcheck source=/dev/null
         source /opt/scripts/setup-ha-mcp.sh
-        configure_ha_mcp_server || bashio::log.warning "HA MCP setup failed, continuing without MCP"
+        configure_ha_mcp_server || bashio::log.warning "MCP nu a putut fi configurat; pornirea continuă fără el"
     fi
 }
 
@@ -319,13 +323,13 @@ run_background_initialization() {
 
     (
         {
-            echo "Starting background initialization..."
+            echo "Pornesc pregătirea în fundal..."
             install_persistent_packages
             install_bundled_skills
             generate_ha_context
             validate_codex_skills
             setup_ha_mcp
-            echo "Background initialization completed"
+            echo "Pregătirea în fundal s-a încheiat"
         } >> "$STARTUP_STATUS_FILE" 2>&1
     ) &
 }
@@ -354,7 +358,7 @@ start_web_terminal() {
 
     ttyd_theme='{"background":"#101418","foreground":"#d9e2ec","cursor":"#36c2a5","cursorAccent":"#101418","selectionBackground":"#315b7c","selectionForeground":"#ffffff","black":"#0b0f14","red":"#ff6b6b","green":"#8bd450","yellow":"#f5c542","blue":"#4ea1ff","magenta":"#c586f7","cyan":"#36c2a5","white":"#d9e2ec","brightBlack":"#52606d","brightRed":"#ff8787","brightGreen":"#a3e635","brightYellow":"#ffe066","brightBlue":"#74b9ff","brightMagenta":"#d0a2ff","brightCyan":"#5eead4","brightWhite":"#f8fafc"}'
 
-    bashio::log.info "Starting Codex terminal backend on port ${terminal_port}"
+    bashio::log.info "Pornesc terminalul Codex pe portul ${terminal_port}"
 
     ttyd \
         --port "$terminal_port" \
@@ -371,12 +375,12 @@ start_web_terminal() {
     local ttyd_pid=$!
     trap 'kill "$ttyd_pid" 2>/dev/null || true' EXIT INT TERM
 
-    bashio::log.info "Starting Codex terminal ingress proxy on port ${web_port}"
+    bashio::log.info "Pornesc proxy-ul terminalului pe portul ${web_port}"
     python3 /opt/scripts/web-ui.py
 }
 
 main() {
-    bashio::log.info "Initializing Codex Terminal add-on..."
+    bashio::log.info "Pornesc Codex Terminal..."
     init_environment
     install_runtime_helpers
     prepare_codex_cli

@@ -40,5 +40,5 @@ Opreste-te si verifica oficial daca:
 - automatizarea depinde de un trigger introdus/eliminat recent;
 - un serviciu apare doar in exemple versionate;
 - dashboard-ul foloseste card/features nou aparute;
-- template-ul foloseste functie Jinja noua;
+- șablonul foloseste functie Jinja noua;
 - schimbarea ar putea face o automatizare critica sa nu mai porneasca.

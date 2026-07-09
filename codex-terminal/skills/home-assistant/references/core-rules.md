@@ -1,6 +1,6 @@
 ---
 name: ha-core-rules
-description: Reguli comune Home Assistant pentru naming, service calls, notificari, template-uri si refactoring.
+description: Reguli comune Home Assistant pentru denumire, apeluri de servicii, notificari, șabloane si refactoring.
 ---
 
 # Reguli Comune
@@ -24,7 +24,7 @@ Citeste acest fisier cand un task atinge mai multe zone Home Assistant si vrei d
 - Friendly name si device name sunt in general cosmetice.
 - `entity_id` este cheie tehnica si cere audit de referinte inainte si dupa schimbare.
 
-## Service Calls
+## Apeluri de servicii
 
 - Foloseste forma moderna:
 
@@ -47,7 +47,7 @@ Citeste acest fisier cand un task atinge mai multe zone Home Assistant si vrei d
 - `parallel`: alerte independente per camera/dispozitiv.
 - `single`: one-shot sau butoane unde repetarea se ignora.
 - Trigger IDs pe automatizari multi-trigger.
-- Conditii native inainte de template-uri.
+- Conditii native inainte de șabloane.
 
 ## Helpers Si Templates
 
