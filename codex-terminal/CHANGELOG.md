@@ -1,8 +1,10 @@
 # Changelog
 
-## 1.3.0
+## 1.3.1
 
 - Corectează instalarea `ha-mcp 7.12.0` când indexul de pachete Home Assistant nu conține versiunea `websockets 16.0`; instalarea poate folosi acum versiunea compatibilă din PyPI.
+
+## 1.3.0
 
 ### Actualizări
 

@@ -20,7 +20,7 @@ class ReleaseConsistencyTests(unittest.TestCase):
             r"uv pip install\s+\\\s+--python /opt/ha-mcp/bin/python\s+\\\s+"
             r"--index-strategy unsafe-best-match",
         )
-        self.assertTrue(re.search(r'^version: "1\.3\.0"$', config, re.MULTILINE))
+        self.assertTrue(re.search(r'^version: "1\.3\.1"$', config, re.MULTILINE))
         self.assertRegex(config, r'ha_mcp_version: "7\.12\.0"')
         self.assertEqual(build.count("-base-python:3.13-alpine3.22"), 3)
 
