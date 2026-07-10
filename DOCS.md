@@ -49,7 +49,7 @@ ha-context --force
 
 Versiunea implicită `ha-mcp 7.12.0` este instalată în imagine și pornește fără descărcare la fiecare restart. Dacă alegi altă versiune prin `ha_mcp_version`, aplicația o pornește cu `uvx`.
 
-Înregistrarea MCP este omisă când `readonly_mode` este activ sau `enable_device_control` este dezactivat.
+Înregistrarea MCP este omisă când `readonly_mode` este activ sau `enable_device_control` este dezactivat. Pentru ca serverul `ha-mcp` să apară în Codex, setează `enable_device_control: true` în configurația add-on-ului și repornește-l.
 
 Verificare:
 

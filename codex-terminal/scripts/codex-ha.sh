@@ -139,8 +139,15 @@ doctor() {
         echo "AVERTISMENT: codex_full_permissions este activ; Codex rulează fără confirmări și izolare"
     fi
 
-    if [ "$(option readonly_mode false)" = "true" ] && [ "$(option enable_ha_mcp true)" = "true" ] && [ "$(option mcp_mode ha-mcp)" != "disabled" ]; then
-        echo "INFORMAȚIE: MCP nu este înregistrat cât timp readonly_mode este activ"
+    if [ "$(option enable_ha_mcp true)" != "true" ]; then
+        echo "INFORMAȚIE: MCP Home Assistant nu este înregistrat deoarece enable_ha_mcp este dezactivat"
+    elif [ "$(option mcp_mode ha-mcp)" = "disabled" ]; then
+        echo "INFORMAȚIE: MCP Home Assistant nu este înregistrat deoarece mcp_mode este disabled"
+    elif [ "$(option readonly_mode false)" = "true" ]; then
+        echo "INFORMAȚIE: MCP Home Assistant nu este înregistrat cât timp readonly_mode este activ"
+    elif [ "$(option enable_device_control false)" != "true" ]; then
+        echo "INFORMAȚIE: MCP Home Assistant nu este înregistrat deoarece enable_device_control este false"
+        echo "            Pentru a-l adăuga în Codex, setează enable_device_control: true și repornește add-on-ul"
     fi
 
     echo ""

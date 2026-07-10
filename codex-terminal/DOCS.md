@@ -82,6 +82,8 @@ Vezi README-ul proiectului pentru tabelul complet.
 
 Cu `mcp_mode: ha-mcp`, aplicația înregistrează serverul `ha-mcp` instalat în imagine:
 
+Înregistrarea este omisă intenționat dacă `readonly_mode` este activ sau `enable_device_control` este `false`. Pentru a-l afișa în `codex mcp list`, setează `enable_device_control: true` și repornește add-on-ul.
+
 ```bash
 codex mcp add home-assistant \
   --env HOMEASSISTANT_URL=http://supervisor/core \

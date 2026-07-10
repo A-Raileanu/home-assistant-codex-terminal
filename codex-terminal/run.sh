@@ -90,7 +90,15 @@ configure_codex_cli_defaults() {
     mkdir -p "$CODEX_HOME"
 
     if [ ! -f "$config_file" ]; then
-        printf 'suppress_unstable_features_warning = true\n' > "$config_file"
+        cat > "$config_file" <<'TOML'
+suppress_unstable_features_warning = true
+hide_agent_reasoning = true
+show_raw_agent_reasoning = false
+model_verbosity = "low"
+
+[tui]
+raw_output_mode = false
+TOML
         chmod 600 "$config_file"
         bashio::log.info "Am creat configurația Codex cu mesaje reduse"
         return 0
@@ -105,12 +113,47 @@ path = pathlib.Path(sys.argv[1])
 text = path.read_text(encoding="utf-8", errors="replace")
 lines = text.splitlines()
 
-for index, line in enumerate(lines):
-    if re.match(r"\s*suppress_unstable_features_warning\s*=", line):
-        lines[index] = "suppress_unstable_features_warning = true"
-        break
+# Eliminatează limita veche introdusă de versiunile anterioare.
+lines = [
+    line for line in lines
+    if not re.match(r"^\s*tool_output_token_limit\s*=", line)
+]
+
+settings = {
+    "suppress_unstable_features_warning": "true",
+    "hide_agent_reasoning": "true",
+    "show_raw_agent_reasoning": "false",
+    "model_verbosity": '"low"',
+}
+
+for key, value in settings.items():
+    pattern = re.compile(rf"^\s*{re.escape(key)}\s*=.*$")
+    for index, line in enumerate(lines):
+        if pattern.match(line):
+            lines[index] = f"{key} = {value}"
+            break
+    else:
+        lines.insert(0, f"{key} = {value}")
+
+tui_start = next(
+    (index for index, line in enumerate(lines) if re.match(r"^\[tui\]\s*$", line)),
+    None,
+)
+if tui_start is None:
+    lines.extend(["", "[tui]", "raw_output_mode = false"])
 else:
-    lines.insert(0, "suppress_unstable_features_warning = true")
+    tui_end = next(
+        (index for index in range(tui_start + 1, len(lines)) if re.match(r"^\[.+\]\s*$", lines[index])),
+        len(lines),
+    )
+    raw_line = next(
+        (index for index in range(tui_start + 1, tui_end) if re.match(r"^\s*raw_output_mode\s*=", lines[index])),
+        None,
+    )
+    if raw_line is None:
+        lines.insert(tui_start + 1, "raw_output_mode = false")
+    else:
+        lines[raw_line] = "raw_output_mode = false"
 
 path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 PY
