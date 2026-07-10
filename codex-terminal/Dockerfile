@@ -39,6 +39,7 @@ RUN apk add --no-cache \
     && UV_PYTHON_PREFERENCE=only-system uv venv --python /usr/local/bin/python3 /opt/ha-mcp \
     && UV_PYTHON_PREFERENCE=only-system uv pip install \
         --python /opt/ha-mcp/bin/python \
+        --index-strategy unsafe-best-match \
         "ha-mcp==${HA_MCP_VERSION}" \
     && test "$(/opt/ha-mcp/bin/python -c \
         'import ha_mcp, importlib.metadata; print(importlib.metadata.version("ha-mcp"))')" = "${HA_MCP_VERSION}" \

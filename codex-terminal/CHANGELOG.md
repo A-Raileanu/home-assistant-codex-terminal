@@ -2,6 +2,8 @@
 
 ## 1.3.0
 
+- Corectează instalarea `ha-mcp 7.12.0` când indexul de pachete Home Assistant nu conține versiunea `websockets 16.0`; instalarea poate folosi acum versiunea compatibilă din PyPI.
+
 ### Actualizări
 
 - Actualizează Codex CLI la `0.144.1` și serverul `ha-mcp` la `7.12.0`.

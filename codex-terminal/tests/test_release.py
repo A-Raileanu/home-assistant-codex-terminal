@@ -15,6 +15,11 @@ class ReleaseConsistencyTests(unittest.TestCase):
 
         self.assertRegex(dockerfile, r"ARG CODEX_VERSION=0\.144\.1\b")
         self.assertRegex(dockerfile, r"ARG HA_MCP_VERSION=7\.12\.0\b")
+        self.assertRegex(
+            dockerfile,
+            r"uv pip install\s+\\\s+--python /opt/ha-mcp/bin/python\s+\\\s+"
+            r"--index-strategy unsafe-best-match",
+        )
         self.assertTrue(re.search(r'^version: "1\.3\.0"$', config, re.MULTILINE))
         self.assertRegex(config, r'ha_mcp_version: "7\.12\.0"')
         self.assertEqual(build.count("-base-python:3.13-alpine3.22"), 3)
